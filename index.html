@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartTour — Intelligent Tourism System</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1c;
+    --bg2: #111827;
+    --bg3: #1a2236;
+    --accent: #e8b86d;
+    --accent2: #4fc3f7;
+    --accent3: #81c784;
+    --accent4: #ef9a9a;
+    --text: #e8eaf6;
+    --muted: #7986cb;
+    --border: rgba(232,184,109,0.15);
+    --card: rgba(255,255,255,0.04);
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
+
+  /* NAV */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    background:rgba(10,15,28,0.92); backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 2.5rem; height:64px;
+  }
+  .logo { font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--accent); font-weight:700; letter-spacing:-0.5px; cursor:pointer; }
+  .logo span { color:var(--accent2); }
+  .nav-links { display:flex; gap:1rem; align-items:center; }
+  .nav-btn {
+    background:none; border:none; color:var(--muted); font-family:'DM Sans',sans-serif;
+    font-size:0.9rem; cursor:pointer; padding:0.4rem 0.8rem; border-radius:6px;
+    transition:all 0.2s;
+  }
+  .nav-btn:hover, .nav-btn.active { color:var(--accent); background:rgba(232,184,109,0.08); }
+  .nav-btn.primary { background:var(--accent); color:#0a0f1c; font-weight:600; padding:0.45rem 1.2rem; }
+  .nav-btn.primary:hover { background:#f5cc88; }
+  #user-badge {
+    display:none; align-items:center; gap:0.6rem;
+    background:rgba(232,184,109,0.08); border:1px solid var(--border);
+    border-radius:20px; padding:0.35rem 1rem; cursor:pointer;
+  }
+  #user-badge .u-avatar {
+    width:28px; height:28px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:#0a0f1c; font-size:0.78rem;
+  }
+  #user-badge .u-name { font-size:0.85rem; color:var(--accent); font-weight:600; }
+
+  /* PAGES */
+  .page { display:none; padding-top:64px; min-height:100vh; animation:fadeIn 0.4s ease; }
+  .page.active { display:block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+  /* ===== LOGIN PAGE ===== */
+  #page-login { display:none; }
+  #page-login.active { display:flex; align-items:center; justify-content:center; min-height:100vh; padding-top:64px; }
+  .auth-container {
+    width:100%; max-width:480px; margin:2rem 1rem;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:24px; padding:2.5rem; position:relative; overflow:hidden;
+  }
+  .auth-container::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+  .auth-glow {
+    position:absolute; top:-60px; right:-60px; width:200px; height:200px;
+    border-radius:50%; background:radial-gradient(circle, rgba(232,184,109,0.08) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .auth-logo { text-align:center; margin-bottom:2rem; }
+  .auth-logo .logo-big { font-family:'Playfair Display',serif; font-size:2rem; color:var(--accent); font-weight:700; }
+  .auth-logo .logo-big span { color:var(--accent2); }
+  .auth-logo p { color:var(--muted); font-size:0.88rem; margin-top:0.3rem; }
+  .auth-tabs { display:flex; background:rgba(255,255,255,0.04); border-radius:12px; padding:4px; margin-bottom:2rem; }
+  .auth-tab {
+    flex:1; padding:0.6rem; border:none; border-radius:8px; cursor:pointer;
+    font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:500;
+    background:none; color:var(--muted); transition:all 0.2s;
+  }
+  .auth-tab.active { background:var(--accent); color:#0a0f1c; font-weight:700; }
+  .auth-form { display:none; }
+  .auth-form.active { display:block; }
+  .auth-field { margin-bottom:1.2rem; position:relative; }
+  .auth-label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.6px; }
+  .auth-input {
+    width:100%; padding:0.85rem 1rem 0.85rem 2.8rem;
+    background:rgba(255,255,255,0.05); border:1.5px solid var(--border);
+    border-radius:10px; color:var(--text); font-size:0.95rem; font-family:'DM Sans',sans-serif;
+    outline:none; transition:all 0.3s;
+  }
+  .auth-input:focus { border-color:var(--accent); background:rgba(255,255,255,0.08); box-shadow:0 0 0 3px rgba(232,184,109,0.08); }
+  .auth-input.error { border-color:var(--accent4); }
+  .field-icon { position:absolute; left:0.9rem; top:2.55rem; color:var(--muted); font-size:1rem; pointer-events:none; }
+  .field-err { color:var(--accent4); font-size:0.75rem; margin-top:0.35rem; display:none; }
+  .field-err.show { display:block; }
+  .auth-row { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; }
+  .auth-btn {
+    width:100%; padding:0.95rem; background:var(--accent); color:#0a0f1c;
+    border:none; border-radius:12px; font-weight:700; font-size:1rem;
+    font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.25s;
+    margin-top:0.5rem; position:relative; overflow:hidden;
+  }
+  .auth-btn:hover { background:#f5cc88; transform:translateY(-2px); box-shadow:0 8px 24px rgba(232,184,109,0.3); }
+  .auth-btn:active { transform:translateY(0); }
+  .auth-divider { text-align:center; color:var(--muted); font-size:0.82rem; margin:1.2rem 0; position:relative; }
+  .auth-divider::before, .auth-divider::after { content:''; position:absolute; top:50%; width:38%; height:1px; background:var(--border); }
+  .auth-divider::before { left:0; }
+  .auth-divider::after { right:0; }
+  .remember-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  .check-wrap { display:flex; align-items:center; gap:0.5rem; cursor:pointer; }
+  .check-wrap input { accent-color:var(--accent); width:15px; height:15px; cursor:pointer; }
+  .check-wrap span { font-size:0.85rem; color:var(--muted); }
+  .forgot-link { font-size:0.85rem; color:var(--accent2); cursor:pointer; text-decoration:underline; background:none; border:none; font-family:'DM Sans',sans-serif; }
+  .strength-bar { height:4px; border-radius:2px; margin-top:0.4rem; background:var(--border); overflow:hidden; }
+  .strength-fill { height:100%; border-radius:2px; width:0; transition:all 0.3s; }
+
+  /* HERO */
+  .hero {
+    position:relative; overflow:hidden;
+    background: linear-gradient(135deg, #0a0f1c 0%, #111827 50%, #0d1b2a 100%);
+    padding:6rem 2.5rem 4rem;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+  }
+  .hero-bg {
+    position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(232,184,109,0.10) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 80% 80%, rgba(79,195,247,0.08) 0%, transparent 60%);
+  }
+  .hero h1 {
+    font-family:'Playfair Display',serif; font-size:clamp(2.8rem,6vw,5rem);
+    font-weight:900; line-height:1.05; letter-spacing:-1px;
+    background:linear-gradient(135deg, var(--accent) 0%, #f5cc88 50%, var(--accent2) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    margin-bottom:1.2rem; position:relative;
+  }
+  .hero p { font-size:1.15rem; color:var(--muted); max-width:540px; line-height:1.7; margin-bottom:2.5rem; position:relative; }
+  .hero-stats { display:flex; gap:3rem; margin-bottom:3rem; position:relative; }
+  .stat { text-align:center; }
+  .stat-num { font-family:'Playfair Display',serif; font-size:2.2rem; color:var(--accent); font-weight:700; line-height:1.1; }
+  .stat-num.emoji-stat { font-size:2.8rem; filter:drop-shadow(0 0 8px rgba(232,184,109,0.4)); }
+  .stat-lbl { font-size:0.8rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+  .hero-cta { display:flex; gap:1rem; position:relative; }
+  .btn-primary {
+    background:var(--accent); color:#0a0f1c; font-weight:700;
+    padding:0.85rem 2rem; border-radius:10px; border:none; cursor:pointer;
+    font-family:'DM Sans',sans-serif; font-size:1rem; transition:all 0.2s;
+  }
+  .btn-primary:hover { background:#f5cc88; transform:translateY(-2px); box-shadow:0 8px 24px rgba(232,184,109,0.3); }
+  .btn-outline {
+    background:transparent; color:var(--accent); font-weight:600;
+    padding:0.85rem 2rem; border-radius:10px; border:1.5px solid var(--accent);
+    cursor:pointer; font-family:'DM Sans',sans-serif; font-size:1rem; transition:all 0.2s;
+  }
+  .btn-outline:hover { background:rgba(232,184,109,0.08); transform:translateY(-2px); }
+
+  /* SEARCH */
+  .search-wrap { position:relative; max-width:600px; width:100%; margin-bottom:2rem; }
+  .search-bar {
+    width:100%; padding:1rem 1.5rem 1rem 3.2rem;
+    background:rgba(255,255,255,0.06); border:1.5px solid var(--border);
+    border-radius:12px; color:var(--text); font-size:1rem; font-family:'DM Sans',sans-serif;
+    outline:none; transition:all 0.3s;
+  }
+  .search-bar:focus { border-color:var(--accent); background:rgba(255,255,255,0.09); }
+  .search-icon { position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:var(--muted); font-size:1.1rem; }
+
+  /* SECTION */
+  .section { padding:3rem 2.5rem; max-width:1200px; margin:0 auto; }
+  .section-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:2rem; }
+  .section-title { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--text); }
+  .section-title span { color:var(--accent); }
+  .see-all { color:var(--accent2); font-size:0.9rem; cursor:pointer; text-decoration:underline; background:none; border:none; font-family:'DM Sans',sans-serif; }
+
+  /* CARDS */
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.5rem; }
+  .card {
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    overflow:hidden; cursor:pointer; transition:all 0.3s; position:relative;
+  }
+  .card:hover { transform:translateY(-6px); border-color:rgba(232,184,109,0.35); box-shadow:0 20px 40px rgba(0,0,0,0.35); }
+  .card-img { width:100%; height:180px; background:var(--bg3); font-size:4rem; display:flex; align-items:center; justify-content:center; }
+  .card-badge {
+    position:absolute; top:12px; right:12px;
+    background:rgba(10,15,28,0.85); border:1px solid var(--border);
+    border-radius:20px; padding:0.25rem 0.75rem; font-size:0.75rem; font-weight:600;
+    backdrop-filter:blur(8px);
+  }
+  .card-badge.green { color:var(--accent3); border-color:rgba(129,199,132,0.3); }
+  .card-badge.blue { color:var(--accent2); border-color:rgba(79,195,247,0.3); }
+  .card-badge.gold { color:var(--accent); border-color:rgba(232,184,109,0.3); }
+  .card-body { padding:1.2rem; }
+  .card-title { font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:0.3rem; }
+  .card-loc { color:var(--muted); font-size:0.82rem; margin-bottom:0.6rem; }
+  .card-row { display:flex; align-items:center; justify-content:space-between; }
+  .card-rating { color:var(--accent); font-size:0.88rem; font-weight:600; }
+  .card-price { color:var(--accent3); font-size:0.9rem; font-weight:600; }
+  .card-tags { display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.6rem; }
+  .tag { background:rgba(79,195,247,0.1); color:var(--accent2); border:1px solid rgba(79,195,247,0.2); border-radius:20px; padding:0.15rem 0.6rem; font-size:0.72rem; font-weight:500; }
+
+  /* FILTERS */
+  .filters { display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:2rem; }
+  .filter-btn {
+    background:var(--card); border:1px solid var(--border); color:var(--muted);
+    border-radius:20px; padding:0.4rem 1rem; font-size:0.85rem; cursor:pointer;
+    font-family:'DM Sans',sans-serif; transition:all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active { background:rgba(232,184,109,0.12); color:var(--accent); border-color:rgba(232,184,109,0.4); }
+
+  /* PLANNER */
+  .planner-grid { display:grid; grid-template-columns:1fr 1.4fr; gap:2rem; }
+  .panel { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:1.5rem; }
+  .panel-title { font-family:'Playfair Display',serif; font-size:1.2rem; margin-bottom:1.2rem; color:var(--accent); }
+  .form-group { margin-bottom:1rem; }
+  .form-label { display:block; font-size:0.82rem; color:var(--muted); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.5px; }
+  .form-input, .form-select {
+    width:100%; padding:0.75rem 1rem; background:rgba(255,255,255,0.05);
+    border:1.5px solid var(--border); border-radius:10px; color:var(--text);
+    font-size:0.95rem; font-family:'DM Sans',sans-serif; outline:none; transition:all 0.2s;
+  }
+  .form-input:focus, .form-select:focus { border-color:var(--accent); background:rgba(255,255,255,0.08); }
+  .form-select option { background:var(--bg2); }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+  .itinerary-day { border-left:2px solid var(--accent); padding-left:1rem; margin-bottom:1.2rem; position:relative; }
+  .itinerary-day::before { content:''; position:absolute; left:-5px; top:4px; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .day-label { font-size:0.75rem; color:var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+  .day-title { font-weight:600; margin:0.2rem 0; }
+  .day-items { color:var(--muted); font-size:0.88rem; line-height:1.7; }
+
+  /* MAP */
+  .map-box {
+    background:var(--bg3); border:1px solid var(--border); border-radius:16px;
+    height:340px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  .map-grid {
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(79,195,247,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,195,247,0.05) 1px, transparent 1px);
+    background-size:40px 40px;
+  }
+  .map-pin { font-size:2rem; position:absolute; cursor:pointer; transition:transform 0.2s; animation:pulse 2s infinite; }
+  .map-pin:hover { transform:scale(1.3); }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .map-label { font-size:0.7rem; color:var(--accent2); background:rgba(10,15,28,0.8); padding:0.2rem 0.5rem; border-radius:4px; position:absolute; pointer-events:none; }
+
+  /* ANALYTICS */
+  .analytics-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1.2rem; margin-bottom:2rem; }
+  .metric-card {
+    background:var(--card); border:1px solid var(--border); border-radius:14px; padding:1.3rem;
+    position:relative; overflow:hidden;
+  }
+  .metric-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .metric-icon { font-size:1.6rem; margin-bottom:0.6rem; }
+  .metric-val { font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; color:var(--accent); }
+  .metric-lbl { color:var(--muted); font-size:0.82rem; }
+  .metric-delta { font-size:0.78rem; color:var(--accent3); margin-top:0.2rem; }
+
+  /* CHART */
+  .chart-wrap { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:1.5rem; }
+  .chart-title { font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:1.5rem; }
+  .bar-chart { display:flex; align-items:flex-end; gap:0.6rem; height:150px; }
+  .bar-col { display:flex; flex-direction:column; align-items:center; gap:0.4rem; flex:1; }
+  .bar { width:100%; border-radius:6px 6px 0 0; background:linear-gradient(180deg, var(--accent) 0%, rgba(232,184,109,0.4) 100%); transition:height 0.8s cubic-bezier(.23,1,.32,1); }
+  .bar-lbl { font-size:0.68rem; color:var(--muted); }
+  .bar-val { font-size:0.72rem; color:var(--accent); font-weight:600; }
+
+  /* REVIEWS */
+  .review-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:1.3rem; margin-bottom:1rem; }
+  .review-header { display:flex; align-items:center; gap:0.8rem; margin-bottom:0.7rem; }
+  .avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-weight:700; color:#0a0f1c; font-size:1rem; flex-shrink:0; }
+  .reviewer-name { font-weight:600; font-size:0.92rem; }
+  .reviewer-loc { color:var(--muted); font-size:0.78rem; }
+  .stars { color:var(--accent); font-size:0.88rem; }
+  .review-text { color:rgba(232,234,246,0.8); font-size:0.88rem; line-height:1.65; }
+  .review-date { color:var(--muted); font-size:0.75rem; margin-top:0.5rem; }
+
+  /* BOOKING */
+  .booking-wrap { max-width:760px; margin:0 auto; }
+  .booking-steps { display:flex; align-items:center; gap:0; margin-bottom:2.5rem; }
+  .step { display:flex; align-items:center; flex:1; }
+  .step-num { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem; flex-shrink:0; border:2px solid var(--border); color:var(--muted); transition:all 0.3s; }
+  .step.done .step-num { background:var(--accent3); border-color:var(--accent3); color:#0a0f1c; }
+  .step.active .step-num { background:var(--accent); border-color:var(--accent); color:#0a0f1c; }
+  .step-line { flex:1; height:2px; background:var(--border); margin:0 0.5rem; }
+  .step.done .step-line { background:var(--accent3); }
+  .step-lbl { font-size:0.72rem; color:var(--muted); margin-top:0.4rem; text-align:center; }
+
+  /* ===== ML RECOMMENDATION ENGINE ===== */
+  .ml-section {
+    background: linear-gradient(135deg, rgba(232,184,109,0.05) 0%, rgba(79,195,247,0.05) 100%);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 3rem 0;
+  }
+  .ml-header { display:flex; align-items:center; gap:1rem; margin-bottom:0.5rem; }
+  .ml-badge {
+    background:linear-gradient(135deg,rgba(232,184,109,0.2),rgba(79,195,247,0.2));
+    border:1px solid rgba(232,184,109,0.3); border-radius:20px;
+    padding:0.25rem 0.8rem; font-size:0.72rem; font-weight:700;
+    color:var(--accent); letter-spacing:1px; text-transform:uppercase;
+  }
+  .ml-controls {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem;
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:1.5rem; margin-bottom:1.5rem;
+  }
+  .ml-control-group label { display:block; font-size:0.75rem; color:var(--muted); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.5px; }
+  .ml-select {
+    width:100%; padding:0.65rem 0.9rem; background:rgba(255,255,255,0.05);
+    border:1.5px solid var(--border); border-radius:8px; color:var(--text);
+    font-size:0.9rem; font-family:'DM Sans',sans-serif; outline:none; transition:all 0.2s; cursor:pointer;
+  }
+  .ml-select:focus { border-color:var(--accent); }
+  .ml-select option { background:var(--bg2); }
+  .ml-run-btn {
+    align-self:flex-end; padding:0.65rem 1.4rem; background:linear-gradient(135deg,var(--accent),#f5cc88);
+    color:#0a0f1c; font-weight:700; border:none; border-radius:8px; cursor:pointer;
+    font-family:'DM Sans',sans-serif; font-size:0.9rem; transition:all 0.25s; white-space:nowrap;
+  }
+  .ml-run-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(232,184,109,0.35); }
+  .ml-algo-bar {
+    display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem; align-items:center;
+  }
+  .algo-chip {
+    padding:0.3rem 0.8rem; border-radius:20px; font-size:0.75rem; font-weight:600;
+    border:1px solid; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif;
+  }
+  .algo-chip.cbf  { color:var(--accent2); border-color:rgba(79,195,247,0.4); background:rgba(79,195,247,0.08); }
+  .algo-chip.knn  { color:var(--accent3); border-color:rgba(129,199,132,0.4); background:rgba(129,199,132,0.08); }
+  .algo-chip.nb   { color:#ce93d8;        border-color:rgba(206,147,216,0.4); background:rgba(206,147,216,0.08); }
+  .algo-chip.ensemble { color:var(--accent); border-color:rgba(232,184,109,0.4); background:rgba(232,184,109,0.08); }
+  .algo-chip.active { filter:brightness(1.3); transform:scale(1.05); }
+  .algo-label { font-size:0.78rem; color:var(--muted); }
+  .rec-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.2rem; }
+  .rec-card {
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    overflow:hidden; transition:all 0.3s; position:relative;
+  }
+  .rec-card:hover { transform:translateY(-5px); border-color:rgba(232,184,109,0.4); box-shadow:0 16px 40px rgba(0,0,0,0.3); }
+  .rec-rank {
+    position:absolute; top:12px; left:12px; width:28px; height:28px;
+    background:linear-gradient(135deg,var(--accent),#f5cc88); color:#0a0f1c;
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:0.78rem; z-index:2;
+  }
+  .rec-emoji-box {
+    height:120px; display:flex; align-items:center; justify-content:center;
+    font-size:3.5rem; position:relative;
+    background:linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0.07));
+  }
+  .rec-body { padding:1rem; }
+  .rec-name { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:700; margin-bottom:0.2rem; }
+  .rec-state { color:var(--muted); font-size:0.78rem; margin-bottom:0.7rem; }
+  .score-bar-wrap { margin-bottom:0.6rem; }
+  .score-label { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--muted); margin-bottom:0.25rem; }
+  .score-track { height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+  .score-fill { height:100%; border-radius:3px; transition:width 1s cubic-bezier(.23,1,.32,1); }
+  .rec-why {
+    font-size:0.78rem; color:rgba(232,234,246,0.6); line-height:1.5;
+    border-top:1px solid var(--border); padding-top:0.6rem; margin-top:0.6rem;
+  }
+  .rec-why span { color:var(--accent2); font-weight:600; }
+  .ml-thinking {
+    text-align:center; padding:2.5rem; color:var(--muted); font-size:0.9rem;
+    display:none;
+  }
+  .ml-thinking .spinner {
+    width:36px; height:36px; border:3px solid var(--border);
+    border-top-color:var(--accent); border-radius:50%; margin:0 auto 1rem;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .season-indicator {
+    display:inline-flex; align-items:center; gap:0.5rem;
+    background:rgba(79,195,247,0.08); border:1px solid rgba(79,195,247,0.2);
+    border-radius:20px; padding:0.3rem 0.9rem; font-size:0.82rem; color:var(--accent2);
+    margin-bottom:1.2rem;
+  }
+  .confidence-badge {
+    display:inline-block; padding:0.15rem 0.5rem; border-radius:10px;
+    font-size:0.68rem; font-weight:700; margin-left:0.4rem;
+  }
+  .conf-high { background:rgba(129,199,132,0.2); color:var(--accent3); }
+  .conf-med  { background:rgba(232,184,109,0.2); color:var(--accent); }
+  .conf-low  { background:rgba(239,154,154,0.2); color:var(--accent4); }
+
+  .profile-grid { display:grid; grid-template-columns:300px 1fr; gap:2rem; }
+  .profile-card {
+    background:var(--card); border:1px solid var(--border); border-radius:20px;
+    padding:2rem; text-align:center; position:relative; overflow:hidden;
+  }
+  .profile-card::before { content:''; position:absolute; top:0; left:0; right:0; height:80px; background:linear-gradient(135deg, rgba(232,184,109,0.15), rgba(79,195,247,0.1)); }
+  .profile-avatar {
+    width:80px; height:80px; border-radius:50%; margin:0 auto 1rem;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; color:#0a0f1c;
+    position:relative; z-index:1; border:3px solid var(--bg);
+  }
+  .profile-name { font-family:'Playfair Display',serif; font-size:1.4rem; color:var(--text); }
+  .profile-email { color:var(--muted); font-size:0.85rem; margin-top:0.3rem; }
+  .profile-since { font-size:0.78rem; color:var(--muted); margin-top:0.5rem; }
+  .profile-stats { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-top:1.5rem; }
+  .p-stat { background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem; }
+  .p-stat-val { font-family:'Playfair Display',serif; font-size:1.4rem; color:var(--accent); font-weight:700; }
+  .p-stat-lbl { font-size:0.72rem; color:var(--muted); }
+  .trip-history { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:1.5rem; }
+  .trip-item {
+    display:flex; align-items:center; gap:1rem; padding:1rem;
+    background:rgba(255,255,255,0.03); border:1px solid var(--border);
+    border-radius:12px; margin-bottom:0.75rem; cursor:pointer; transition:all 0.2s;
+  }
+  .trip-item:hover { border-color:rgba(232,184,109,0.3); background:rgba(232,184,109,0.04); }
+  .trip-emoji { font-size:2rem; flex-shrink:0; }
+  .trip-info { flex:1; }
+  .trip-name { font-weight:600; font-size:0.95rem; }
+  .trip-meta { color:var(--muted); font-size:0.8rem; margin-top:0.2rem; }
+  .trip-price { color:var(--accent3); font-weight:600; font-size:0.9rem; }
+  .trip-status { padding:0.2rem 0.6rem; border-radius:20px; font-size:0.72rem; font-weight:600; }
+  .trip-status.completed { background:rgba(129,199,132,0.15); color:var(--accent3); }
+  .trip-status.upcoming { background:rgba(79,195,247,0.15); color:var(--accent2); }
+  .trip-status.planning { background:rgba(232,184,109,0.15); color:var(--accent); }
+  .export-btn {
+    display:flex; align-items:center; gap:0.5rem; background:rgba(79,195,247,0.1);
+    border:1px solid rgba(79,195,247,0.3); color:var(--accent2); border-radius:10px;
+    padding:0.6rem 1.2rem; cursor:pointer; font-family:'DM Sans',sans-serif;
+    font-size:0.88rem; font-weight:500; transition:all 0.2s; margin-top:1rem;
+  }
+  .export-btn:hover { background:rgba(79,195,247,0.18); transform:translateY(-1px); }
+
+  /* MODAL */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(10,15,28,0.85); z-index:200;
+    display:none; align-items:center; justify-content:center; backdrop-filter:blur(6px);
+  }
+  .modal-overlay.active { display:flex; }
+  .modal {
+    background:var(--bg2); border:1px solid var(--border); border-radius:20px;
+    padding:2rem; max-width:500px; width:90%; position:relative;
+    animation:fadeIn 0.3s ease;
+  }
+  .modal-close { position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.3rem; }
+  .modal-title { font-family:'Playfair Display',serif; font-size:1.3rem; color:var(--accent); margin-bottom:1rem; }
+
+  /* TOAST */
+  .toast {
+    position:fixed; bottom:2rem; right:2rem; z-index:999;
+    background:var(--bg3); border:1px solid var(--accent); border-radius:12px;
+    padding:1rem 1.5rem; color:var(--text); font-size:0.9rem;
+    display:none; animation:slideUp 0.3s ease;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  }
+  @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  @media(max-width:768px){
+    .planner-grid, .profile-grid { grid-template-columns:1fr; }
+    .hero-stats { gap:1.5rem; }
+    nav { padding:0 1rem; }
+    .section { padding:2rem 1rem; }
+    .auth-row { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="showPage('home')">Smart<span>Tour</span></div>
+  <div class="nav-links" id="main-nav">
+    <button class="nav-btn active" onclick="showPage('home')">🏠 Home</button>
+    <button class="nav-btn" onclick="showPage('destinations')">🗺 Destinations</button>
+    <button class="nav-btn" onclick="showPage('planner')">📅 Planner</button>
+    <button class="nav-btn" onclick="showPage('analytics')">📊 Analytics</button>
+    <button class="nav-btn" onclick="showPage('booking')">✈ Book</button>
+    <div id="user-badge" onclick="showPage('profile')">
+      <div class="u-avatar" id="nav-avatar">?</div>
+      <span class="u-name" id="nav-username">Guest</span>
+    </div>
+    <button id="login-nav-btn" class="nav-btn primary" onclick="showPage('login')">Sign In</button>
+    <button id="logout-nav-btn" class="nav-btn" onclick="logoutUser()" style="display:none; color:var(--accent4)">Sign Out</button>
+  </div>
+</nav>
+
+<div id="page-login" class="page">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 64px)">
+    <div class="auth-container">
+      <div class="auth-glow"></div>
+      <div class="auth-logo">
+        <div class="logo-big">Smart<span>Tour</span></div>
+        <p>Your intelligent travel companion</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')">Create Account</button>
+      </div>
+
+      <div class="auth-form active" id="form-login">
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <span class="field-icon">📧</span>
+          <input class="auth-input" id="login-email" type="email" placeholder="you@example.com" autocomplete="email">
+          <div class="field-err" id="err-login-email">Please enter a valid email</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <span class="field-icon">🔒</span>
+          <input class="auth-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
+          <div class="field-err" id="err-login-password">Password is required</div>
+        </div>
+        <div class="remember-row">
+          <label class="check-wrap">
+            <input type="checkbox" id="remember-me" checked>
+            <span>Remember me</span>
+          </label>
+          <button class="forgot-link" onclick="showForgotModal()">Forgot password?</button>
+        </div>
+        <button class="auth-btn" onclick="loginUser()">✈ Sign In to SmartTour</button>
+        <div class="auth-divider">or continue as</div>
+        <button class="btn-outline" style="width:100%;padding:0.75rem" onclick="demoLogin()">🎮 Demo Account</button>
+      </div>
+
+      <div class="auth-form" id="form-signup">
+        <div class="auth-row">
+          <div class="auth-field">
+            <label class="auth-label">First Name</label>
+            <span class="field-icon">👤</span>
+            <input class="auth-input" id="signup-first" type="text" placeholder="Riya">
+            <div class="field-err" id="err-signup-first">Required</div>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Last Name</label>
+            <span class="field-icon">👤</span>
+            <input class="auth-input" id="signup-last" type="text" placeholder="Sharma">
+            <div class="field-err" id="err-signup-last">Required</div>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <span class="field-icon">📧</span>
+          <input class="auth-input" id="signup-email" type="email" placeholder="you@example.com" autocomplete="email">
+          <div class="field-err" id="err-signup-email">Please enter a valid email</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Phone Number</label>
+          <span class="field-icon">📱</span>
+          <input class="auth-input" id="signup-phone" type="tel" placeholder="+91 9876543210">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Nationality</label>
+          <span class="field-icon">🌍</span>
+          <select class="auth-input" id="signup-nationality" style="padding-left:2.8rem">
+            <option>Indian</option><option>American</option><option>British</option>
+            <option>French</option><option>Japanese</option><option>Australian</option><option>Other</option>
+          </select>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <span class="field-icon">🔒</span>
+          <input class="auth-input" id="signup-password" type="password" placeholder="Min. 6 characters" oninput="checkStrength(this.value)">
+          <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+          <div class="field-err" id="err-signup-password">Min. 6 characters required</div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Confirm Password</label>
+          <span class="field-icon">🔒</span>
+          <input class="auth-input" id="signup-confirm" type="password" placeholder="Re-enter password">
+          <div class="field-err" id="err-signup-confirm">Passwords do not match</div>
+        </div>
+        <button class="auth-btn" onclick="registerUser()">🚀 Create My Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <h1>Discover the World,<br>The Smart Way</h1>
+    <p>AI-powered travel recommendations, real-time insights, and seamless itinerary planning for modern explorers.</p>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-bar" type="text" placeholder="Search destinations, hotels, experiences..." oninput="handleSearch(this.value)">
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num emoji-stat">🥾</div><div class="stat-lbl">Trekking Routes</div></div>
+      <div class="stat"><div class="stat-num emoji-stat">🛕</div><div class="stat-lbl">Sacred Temples</div></div>
+      <div class="stat"><div class="stat-num emoji-stat">💰</div><div class="stat-lbl">Budget Trips</div></div>
+      <div class="stat"><div class="stat-num">92%</div><div class="stat-lbl">Satisfied Customers</div></div>
+    </div>
+    <div class="hero-cta">
+      <button class="btn-primary" onclick="showPage('destinations')">Explore Destinations</button>
+      <button class="btn-outline" onclick="showPage('planner')">Plan My Trip</button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🌟 Featured <span>Destinations</span></div>
+      <button class="see-all" onclick="showPage('destinations')">See All →</button>
+    </div>
+    <div class="cards-grid" id="featured-cards"></div>
+  </div>
+
+  <div class="ml-section">
+    <div class="section" style="padding-top:0;padding-bottom:0">
+      <div class="ml-header">
+        <div class="section-title">🤖 AI <span>Season Recommender</span></div>
+        <div class="ml-badge">ML Powered</div>
+      </div>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;max-width:620px">
+        Our engine uses <strong style="color:var(--accent2)">Content-Based Filtering</strong>, <strong style="color:var(--accent3)">k-NN similarity</strong>, and a <strong style="color:#ce93d8">Naïve Bayes season classifier</strong> to rank destinations by how well they match your season, interests, and budget.
+      </p>
+
+      <div class="algo-label" style="margin-bottom:0.5rem">Active algorithm:</div>
+      <div class="ml-algo-bar">
+        <button class="algo-chip cbf active" onclick="setAlgo('cbf',this)">📐 Content-Based Filtering</button>
+        <button class="algo-chip knn" onclick="setAlgo('knn',this)">📍 k-NN (k=5)</button>
+        <button class="algo-chip nb" onclick="setAlgo('nb',this)">📊 Naïve Bayes</button>
+        <button class="algo-chip ensemble" onclick="setAlgo('ensemble',this)">⚡ Ensemble (All 3)</button>
+      </div>
+
+      <div class="ml-controls">
+        <div class="ml-control-group">
+          <label>📅 Travel Month</label>
+          <select class="ml-select" id="ml-month">
+            <option value="0">January</option><option value="1">February</option>
+            <option value="2">March</option><option value="3">April</option>
+            <option value="4">May</option><option value="5">June</option>
+            <option value="6">July</option><option value="7">August</option>
+            <option value="8">September</option><option value="9">October</option>
+            <option value="10">November</option><option value="11">December</option>
+          </select>
+        </div>
+        <div class="ml-control-group">
+          <label>🎒 Travel Style</label>
+          <select class="ml-select" id="ml-style">
+            <option value="all">Any Style</option>
+            <option value="Adventure">Adventure & Trek</option>
+            <option value="Heritage">Heritage & Culture</option>
+            <option value="Beach">Beach & Islands</option>
+            <option value="Nature">Nature & Hills</option>
+            <option value="Spiritual">Spiritual</option>
+            <option value="Wildlife">Wildlife</option>
+          </select>
+        </div>
+        <div class="ml-control-group">
+          <label>💰 Max Budget (₹)</label>
+          <select class="ml-select" id="ml-budget">
+            <option value="999999">Any Budget</option>
+            <option value="10000">Under ₹10,000</option>
+            <option value="15000">Under ₹15,000</option>
+            <option value="20000">Under ₹20,000</option>
+            <option value="30000">Under ₹30,000</option>
+          </select>
+        </div>
+        <div class="ml-control-group">
+          <label>🌡 Climate Preference</label>
+          <select class="ml-select" id="ml-climate">
+            <option value="any">Any Climate</option>
+            <option value="cool">Cool & Pleasant</option>
+            <option value="warm">Warm & Sunny</option>
+            <option value="cold">Cold & Snowy</option>
+            <option value="dry">Dry & Arid</option>
+          </select>
+        </div>
+        <div class="ml-control-group" style="display:flex;align-items:flex-end">
+          <button class="ml-run-btn" onclick="runMLEngine()">🔍 Get Recommendations</button>
+        </div>
+      </div>
+
+      <div id="ml-season-tag"></div>
+      <div class="ml-thinking" id="ml-thinking">
+        <div class="spinner"></div>
+        <div id="ml-thinking-text">Running ML pipeline…</div>
+      </div>
+      <div class="rec-cards" id="ml-results"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><div class="section-title">💬 Traveler <span>Reviews</span></div></div>
+    <div id="reviews-list"></div>
+  </div>
+</div>
+
+<div id="page-destinations" class="page">
+  <div class="section">
+    <div class="section-title" style="margin-bottom:1.5rem">🗺 All <span>Destinations</span></div>
+    <div class="filters" id="dest-filters"></div>
+    <div style="margin-bottom:1.5rem">
+      <div class="search-wrap" style="max-width:400px;margin:0">
+        <span class="search-icon">🔍</span>
+        <input class="search-bar" type="text" placeholder="Filter destinations..." oninput="filterDest(this.value)">
+      </div>
+    </div>
+    <div class="cards-grid" id="all-cards"></div>
+  </div>
+</div>
+
+<div id="page-planner" class="page">
+  <div class="section">
+    <div class="section-title" style="margin-bottom:2rem">📅 Trip <span>Planner</span></div>
+    <div class="planner-grid">
+      <div>
+        <div class="panel">
+          <div class="panel-title">🧭 Plan Your Journey</div>
+          <div class="form-group">
+            <label class="form-label">Destination</label>
+            <select class="form-select" id="plan-dest"><option value="">Choose destination...</option></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Departure</label><input class="form-input" type="date" id="plan-from"></div>
+            <div class="form-group"><label class="form-label">Return</label><input class="form-input" type="date" id="plan-to"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Travelers</label>
+              <select class="form-select" id="plan-travelers"><option>1</option><option>2</option><option>3</option><option>4</option><option>5+</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">Budget</label>
+              <select class="form-select" id="plan-budget"><option>Economy</option><option>Moderate</option><option>Luxury</option></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Interests</label>
+            <div class="filters" style="margin:0">
+              <button class="filter-btn" onclick="toggleInterest(this)">🏛 Culture</button>
+              <button class="filter-btn" onclick="toggleInterest(this)">🏄 Adventure</button>
+              <button class="filter-btn" onclick="toggleInterest(this)">🍜 Food</button>
+              <button class="filter-btn" onclick="toggleInterest(this)">🏖 Beach</button>
+              <button class="filter-btn" onclick="toggleInterest(this)">🏔 Nature</button>
+              <button class="filter-btn" onclick="toggleInterest(this)">🛍 Shopping</button>
+            </div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-top:0.5rem" onclick="generateItinerary()">✨ Generate Itinerary</button>
+        </div>
+        <div class="map-box" style="margin-top:1.5rem">
+          <div class="map-grid"></div>
+          <div class="map-pin" style="top:32%;left:38%">📍<div class="map-label" style="top:100%;left:0;white-space:nowrap">Jaipur</div></div>
+          <div class="map-pin" style="top:25%;left:48%">📍<div class="map-label" style="top:100%;left:0;white-space:nowrap">Leh-Ladakh</div></div>
+          <div class="map-pin" style="top:42%;left:35%">📍<div class="map-label" style="top:100%;left:0;white-space:nowrap">Agra</div></div>
+          <div class="map-pin" style="top:68%;left:42%">📍<div class="map-label" style="top:100%;left:0;white-space:nowrap">Kerala</div></div>
+          <div class="map-pin" style="top:55%;left:28%">📍<div class="map-label" style="top:100%;left:0;white-space:nowrap">Goa</div></div>
+          <div class="map-pin" style="top:36%;left:62%">📍<div class="map-label" style="top:100%;left:0;white-space:nowrap">Varanasi</div></div>
+          <div class="map-pin" style="top:72%;left:70%">📍<div class="map-label" style="top:100%;left:0;white-space:nowrap">Andaman</div></div>
+          <div style="position:absolute;bottom:1rem;left:1rem;color:var(--muted);font-size:0.78rem">🗺 Interactive Destination Map</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">📋 Your Itinerary</div>
+        <div id="itinerary-output"><p style="color:var(--muted);font-size:0.9rem">Fill in your preferences and click "Generate Itinerary" to get a personalized travel plan.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-analytics" class="page">
+  <div class="section">
+    <div class="section-title" style="margin-bottom:2rem">📊 Tourism <span>Analytics</span></div>
+    <div class="analytics-grid" id="metrics-grid"></div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;margin-top:1.5rem">
+      <div class="chart-wrap">
+        <div class="chart-title">Monthly Visitors (2024)</div>
+        <div class="bar-chart" id="bar-chart"></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">Popular Destination Types</div>
+        <div id="donut-chart" style="display:flex;flex-direction:column;gap:0.75rem;margin-top:0.5rem"></div>
+      </div>
+    </div>
+    <div style="margin-top:1.5rem">
+      <div class="chart-wrap">
+        <div class="chart-title">Top Destinations by Rating</div>
+        <div id="top-destinations-table" style="margin-top:1rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-booking" class="page">
+  <div class="section">
+    <div class="section-title" style="margin-bottom:2rem">✈ <span>Book</span> Your Trip</div>
+    <div class="booking-wrap">
+      <div class="booking-steps">
+        <div class="step active" id="step1"><div><div class="step-num">1</div><div class="step-lbl">Select</div></div><div class="step-line"></div></div>
+        <div class="step" id="step2"><div><div class="step-num">2</div><div class="step-lbl">Details</div></div><div class="step-line"></div></div>
+        <div class="step" id="step3"><div><div class="step-num">3</div><div class="step-lbl">Review</div></div><div class="step-line"></div></div>
+        <div class="step" id="step4"><div><div class="step-num">4</div><div class="step-lbl">Confirm</div></div></div>
+      </div>
+      <div id="booking-step1" class="panel">
+        <div class="panel-title">🌍 Choose Your Package</div>
+        <div class="cards-grid" id="booking-packages" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"></div>
+        <button class="btn-primary" style="margin-top:1.5rem" onclick="bookingNext(1)">Next: Add Details →</button>
+      </div>
+      <div id="booking-step2" class="panel" style="display:none">
+        <div class="panel-title">👤 Traveler Details</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="b-first" type="text" placeholder="Riya"></div>
+          <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="b-last" type="text" placeholder="Sharma"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="b-email" type="email" placeholder="riya@email.com"></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="b-phone" type="tel" placeholder="+91 9876543210"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Passport No.</label><input class="form-input" id="b-passport" type="text" placeholder="P1234567"></div>
+          <div class="form-group"><label class="form-label">Nationality</label>
+            <select class="form-select" id="b-nationality"><option>Indian</option><option>American</option><option>British</option><option>French</option><option>Japanese</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:1rem;margin-top:0.5rem">
+          <button class="btn-outline" onclick="bookingBack(2)">← Back</button>
+          <button class="btn-primary" onclick="bookingNext(2)">Next: Review →</button>
+        </div>
+      </div>
+      <div id="booking-step3" class="panel" style="display:none">
+        <div class="panel-title">📋 Review Booking</div>
+        <div id="booking-review"></div>
+        <div style="display:flex;gap:1rem;margin-top:1rem">
+          <button class="btn-outline" onclick="bookingBack(3)">← Back</button>
+          <button class="btn-primary" onclick="bookingNext(3)">Confirm & Pay 💳</button>
+        </div>
+      </div>
+      <div id="booking-step4" class="panel" style="display:none;text-align:center;padding:3rem">
+        <div style="font-size:4rem;margin-bottom:1rem">🎉</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--accent);margin-bottom:0.5rem">Booking Confirmed!</div>
+        <div style="color:var(--muted);margin-bottom:1.5rem">Your adventure awaits. Confirmation details sent to your email.</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem;display:inline-block;text-align:left;min-width:280px">
+          <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem">BOOKING REFERENCE</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent2)" id="booking-ref">STR-2024-8841</div>
+        </div>
+        <br><br>
+        <button class="btn-primary" onclick="showPage('home')">🏠 Back to Home</button>
+        <button class="btn-outline" style="margin-left:1rem" onclick="showPage('profile')">👤 View My Trips</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-profile" class="page">
+  <div class="section">
+    <div class="section-title" style="margin-bottom:2rem">👤 My <span>Profile</span></div>
+    <div class="profile-grid" id="profile-content">
+      <div style="color:var(--muted);text-align:center;padding:3rem">Please sign in to view your profile.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="forgot-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('forgot-modal')">✕</button>
+    <div class="modal-title">🔑 Reset Password</div>
+    <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.2rem">Enter your registered email and we'll send you reset instructions.</p>
+    <div class="auth-field">
+      <label class="auth-label">Email Address</label>
+      <span class="field-icon">📧</span>
+      <input class="auth-input" id="forgot-email" type="email" placeholder="you@example.com">
+    </div>
+    <button class="auth-btn" onclick="sendReset()">Send Reset Link</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dest-modal">
+  <div class="modal" style="max-width: 600px; padding: 0; overflow: hidden; position: relative;">
+    <button class="modal-close" style="z-index:10; background:rgba(0,0,0,0.6); border-radius:50%; width:34px; height:34px; top:1rem; right:1rem; color:#fff; display: flex; align-items: center; justify-content: center;" onclick="closeModal('dest-modal')">✕</button>
+    <div id="dest-modal-content">
+      </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  DATA
+// ============================================================
+const destinations = [
+  { id:1,  name:"Taj Mahal",   state:"Uttar Pradesh", region:"North", emoji:"🕌", category:"Heritage", accessibility:"Easy", airport:"Agra Civil Enclave", rating:5.0, price:"₹8,500", priceNum:8500, tags:["UNESCO","History","Romance"], badge:"Icon of India", badgeType:"gold", desc:"Home to the world-famous Taj Mahal, one of the Seven Wonders of the World." },
+  { id:2,  name:"Jaipur", state:"Rajasthan", region:"West", emoji:"🏯", category:"Heritage", accessibility:"Easy", airport:"Jaipur International", rating:4.9, price:"₹12,000", priceNum:12000, tags:["Forts","Culture","Shopping"], badge:"Pink City", badgeType:"gold", desc:"The Pink City dazzles with magnificent forts, vibrant bazaars, and royal Rajputana heritage." },
+  { id:3,  name:"Kerala Backwaters", state:"Kerala", region:"South", emoji:"🛶", category:"Nature", accessibility:"Moderate", airport:"Cochin International", rating:4.9, price:"₹18,000", priceNum:18000, tags:["Houseboat","Nature","Serene"], badge:"God's Own Country", badgeType:"green", desc:"Drift along tranquil palm-fringed backwaters on a traditional houseboat." },
+  { id:4,  name:"Goa", state:"Goa", region:"West", emoji:"🏖", category:"Beach", accessibility:"Easy", airport:"Dabolim Airport", rating:4.8, price:"₹15,000", priceNum:15000, tags:["Beach","Nightlife","Food"], badge:"Beach Capital", badgeType:"blue", desc:"Sun-soaked beaches, Portuguese heritage, and vibrant nightlife." },
+  { id:5,  name:"Varanasi", state:"Uttar Pradesh", region:"North", emoji:"🪔", category:"Spiritual", accessibility:"Moderate", airport:"Lal Bahadur Shastri", rating:4.8, price:"₹7,000", priceNum:7000, tags:["Ghats","Spiritual","Ancient"], badge:"Spiritual Heart", badgeType:"gold", desc:"One of the world's oldest living cities on the sacred ghats of the Ganges." },
+  { id:6,  name:"Manali", state:"Himachal Pradesh", region:"North", emoji:"🏔", category:"Adventure", accessibility:"Difficult", airport:"Bhuntar Airport", rating:4.9, price:"₹22,000", priceNum:22000, tags:["Snow","Trek","Skiing"], badge:"Adventure Hub", badgeType:"blue", desc:"A high-altitude Himalayan resort town known for backpacking and skiing." },
+  { id:7,  name:"Andaman Islands", state:"Andaman & Nicobar", region:"East", emoji:"🐠", category:"Beach", accessibility:"Moderate", airport:"Veer Savarkar International", rating:4.9, price:"₹28,000", priceNum:28000, tags:["Snorkel","Beach","Luxury"], badge:"Pearl of India", badgeType:"blue", desc:"Pristine turquoise waters and white-sand beaches at India's tropical paradise." },
+  { id:8,  name:"Munnar", state:"Kerala", region:"South", emoji:"🌿", category:"Nature", accessibility:"Moderate", airport:"Cochin International", rating:4.7, price:"₹14,000", priceNum:14000, tags:["Tea Gardens","Hills","Misty"], badge:"Hill Station", badgeType:"green", desc:"Endless rolling tea plantations cloaked in morning mist." },
+  { id:9,  name:"Sundarbans", state:"West Bengal", region:"East", emoji:"🐯", category:"Nature", accessibility:"Difficult", airport:"Netaji Subhas Chandra Bose", rating:4.7, price:"₹14,000", priceNum:14000, tags:["Tiger","Mangrove","Unique"], badge:"Tiger Reserve", badgeType:"blue", desc:"The world's largest mangrove delta, home to the Royal Bengal Tiger." },
+  { id:10, name:"Mysore", state:"Karnataka", region:"South", emoji:"🏛", category:"Heritage", accessibility:"Easy", airport:"Mysore Airport", rating:4.7, price:"₹10,000", priceNum:10000, tags:["Palace","Culture","Festivals"], badge:"City of Palaces", badgeType:"gold", desc:"The magnificent Mysore Palace and opulent Dasara festival." },
+  { id:11, name:"Rishikesh", state:"Uttarakhand", region:"North", emoji:"🧘", category:"Adventure", accessibility:"Difficult", airport:"Dehradun Airport", rating:4.8, price:"₹9,000", priceNum:9000, tags:["Yoga","Rafting","Ganges"], badge:"Yoga Capital", badgeType:"green", desc:"Yoga, meditation, and white-water rafting in the Himalayan foothills." },
+  { id:12, name:"Jaisalmer", state:"Rajasthan", region:"West", emoji:"🐪", category:"Heritage", accessibility:"Moderate", airport:"Jaisalmer Airport", rating:4.8, price:"₹16,000", priceNum:16000, tags:["Safari","Dunes","Forts"], badge:"Golden City", badgeType:"gold", desc:"The Golden City in the heart of the Thar Desert, famous for its yellow sandstone fort." },
+  { id:13, name:"Shimla", state:"Himachal Pradesh", region:"North", emoji:"❄️", category:"Nature", accessibility:"Easy", airport:"Shimla Airport", rating:4.6, price:"₹12,000", priceNum:12000, tags:["Snow","Hills","Colonial"], badge:"Summer Capital", badgeType:"blue", desc:"Charming colonial architecture and scenic toy-train rides." },
+  { id:14, name:"Udaipur", state:"Rajasthan", region:"West", emoji:"🏰", category:"Heritage", accessibility:"Easy", airport:"Udaipur Airport", rating:4.9, price:"₹15,000", priceNum:15000, tags:["Lakes","Palace","Royal"], badge:"City of Lakes", badgeType:"gold", desc:"Known as the Venice of the East, famed for its sophisticated lake system." },
+  { id:15, name:"Darjeeling", state:"West Bengal", region:"East", emoji:"🍵", category:"Nature", accessibility:"Moderate", airport:"Bagdogra Airport", rating:4.7, price:"₹13,000", priceNum:13000, tags:["Tea","Hills","Himalaya"], badge:"Queen of Hills", badgeType:"green", desc:"Sip the world's finest tea with views of Kangchenjunga." },
+  { id:16, name:"Mahabalipuram", state:"Tamil Nadu", region:"South", emoji:"🗿", category:"Heritage", accessibility:"Easy", airport:"Chennai International", rating:4.8, price:"₹9,000", priceNum:9000, tags:["Shore Temple","UNESCO","Beach"], badge:"Rock-cut Art", badgeType:"gold", desc:"Famous for its UNESCO-listed group of 7th and 8th-century monuments." },
+  { id:17, name:"Kaziranga", state:"Assam", region:"East", emoji:"🦏", category:"Nature", accessibility:"Moderate", airport:"Jorhat Airport", rating:4.8, price:"₹18,000", priceNum:18000, tags:["Rhino","Wildlife","UNESCO"], badge:"Wildlife Haven", badgeType:"green", desc:"Home to two-thirds of the world's great one-horned rhinoceroses." },
+  { id:18, name:"Cherrapunji", state:"Meghalaya", region:"East", emoji:"🌧️", category:"Nature", accessibility:"Difficult", airport:"Shillong Airport", rating:4.7, price:"₹11,000", priceNum:11000, tags:["Rain","Waterfalls","Root Bridges"], badge:"Wettest Place", badgeType:"blue", desc:"Famous for its living root bridges and spectacular waterfalls." },
+  { id:19, name:"Ajanta & Ellora", state:"Maharashtra", region:"West", emoji:"🗿", category:"Heritage", accessibility:"Moderate", airport:"Aurangabad Airport", rating:4.9, price:"₹10,500", priceNum:10500, tags:["Caves","History","Art"], badge:"Rock-cut Marvel", badgeType:"gold", desc:"Ancient rock-cut caves with exquisite paintings and sculptures." },
+  { id:20, name:"Amritsar", state:"Punjab", region:"North", emoji:"✨", category:"Religious", accessibility:"Easy", airport:"Sri Guru Ram Dass Jee", rating:4.9, price:"₹8,000", priceNum:8000, tags:["Golden Temple","Spiritual","Food"], badge:"Golden City", badgeType:"gold", desc:"The resplendent Golden Temple radiates divine serenity." }
+];
+
+const reviews = [
+  { name:"Priya M.",   loc:"Mumbai, India",     dest:"Kerala Backwaters", rating:5, text:"The houseboat stay was pure magic! SmartTour's itinerary balanced Alleppey backwaters, Munnar tea gardens, and Kovalam beach perfectly. Every recommendation was spot-on.", date:"March 2025", initials:"PM" },
+  { name:"Arjun K.",   loc:"Bengaluru, India",   dest:"Leh-Ladakh",        rating:5, text:"The AI planner accounted for altitude acclimatisation days automatically. We caught Pangong Tso at golden hour — a memory for life. Absolutely brilliant platform.", date:"February 2025", initials:"AK" },
+  { name:"Rohit & Sneha", loc:"Delhi, India",    dest:"Rajasthan",         rating:5, text:"Our golden triangle + Jaisalmer desert safari honeymoon was seamlessly planned. The camel camp under the stars was breathtaking. SmartTour made it effortless!", date:"January 2025", initials:"RS" },
+  { name:"Ananya S.",  loc:"Hyderabad, India",   dest:"Andaman Islands",   rating:4, text:"The snorkelling spots at Havelock were incredible. Smart weather-based scheduling meant we avoided monsoon days. Genuinely impressive travel intelligence.", date:"December 2024", initials:"AS" },
+];
+
+const metrics = [
+  { icon:"✈", val:"18,432", lbl:"Active Travelers", delta:"↑ 12% this month" },
+  { icon:"🌍", val:"2,481", lbl:"Destinations Listed", delta:"↑ 8 new this week" },
+  { icon:"⭐", val:"4.87", lbl:"Avg. Rating", delta:"↑ 0.03 from last month" },
+  { icon:"💰", val:"₹42Cr", lbl:"Revenue Generated", delta:"↑ 23% YoY" },
+  { icon:"🤖", val:"94%", lbl:"AI Accuracy", delta:"↑ 2% improvement" },
+  { icon:"🎫", val:"8,210", lbl:"Bookings This Month", delta:"↑ 18% from last month" },
+];
+
+const monthlyData = [
+  {m:"Jan",v:3200},{m:"Feb",v:4100},{m:"Mar",v:5800},{m:"Apr",v:7200},{m:"May",v:8400},
+  {m:"Jun",v:9100},{m:"Jul",v:10500},{m:"Aug",v:11200},{m:"Sep",v:8900},{m:"Oct",v:7600},{m:"Nov",v:6100},{m:"Dec",v:9800}
+];
+
+const destTypes = [
+  {type:"Heritage & Monuments", pct:30, color:"var(--accent)"},
+  {type:"Nature & Hill Stations", pct:26, color:"var(--accent3)"},
+  {type:"Beach & Islands",       pct:20, color:"var(--accent2)"},
+  {type:"Spiritual & Religious",  pct:15, color:"#ce93d8"},
+  {type:"Adventure & Wildlife",   pct:9,  color:"var(--accent4)"},
+];
+
+// ============================================================
+//  CUSTOMER DATA MODULE (localStorage-backed JSON store)
+// ============================================================
+const DB_KEY = 'smarttour_db';
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    return raw ? JSON.parse(raw) : { customers: [], sessions: {} };
+  } catch { return { customers: [], sessions: {} }; }
+}
+
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db, null, 2));
+}
+
+function hashPassword(pw) {
+  // Simple deterministic hash (not cryptographic – demo only)
+  let hash = 0;
+  for (let i = 0; i < pw.length; i++) {
+    hash = ((hash << 5) - hash) + pw.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'h_' + Math.abs(hash).toString(16);
+}
+
+function generateId() {
+  return 'cust_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+// ============================================================
+//  AUTH STATE
+// ============================================================
+let currentUser = null;
+
+function getCurrentSession() {
+  const db = loadDB();
+  const sessionEmail = localStorage.getItem('smarttour_session');
+  if (!sessionEmail) return null;
+  return db.customers.find(c => c.email === sessionEmail) || null;
+}
+
+function initSession() {
+  currentUser = getCurrentSession();
+  updateNavUI();
+}
+
+function updateNavUI() {
+  const badge = document.getElementById('user-badge');
+  const loginBtn = document.getElementById('login-nav-btn');
+  const logoutBtn = document.getElementById('logout-nav-btn');
+  if (currentUser) {
+    badge.style.display = 'flex';
+    document.getElementById('nav-avatar').textContent = getInitials(currentUser.firstName, currentUser.lastName);
+    document.getElementById('nav-username').textContent = currentUser.firstName;
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+    loginBtn.style.display = 'block';
+    logoutBtn.style.display = 'none';
+  }
+}
+
+function getInitials(first, last) {
+  return ((first||'?')[0] + (last||'?')[0]).toUpperCase();
+}
+
+// ============================================================
+//  REGISTER
+// ============================================================
+function registerUser() {
+  const first = document.getElementById('signup-first').value.trim();
+  const last  = document.getElementById('signup-last').value.trim();
+  const email = document.getElementById('signup-email').value.trim().toLowerCase();
+  const phone = document.getElementById('signup-phone').value.trim();
+  const nat   = document.getElementById('signup-nationality').value;
+  const pw    = document.getElementById('signup-password').value;
+  const conf  = document.getElementById('signup-confirm').value;
+
+  let valid = true;
+  const setErr = (id, show) => {
+    document.getElementById('err-' + id).classList.toggle('show', show);
+    document.getElementById(id.replace('err-', '') === id ? 'signup-' + id.split('-')[1] : id).classList.toggle('error', show);
+  };
+
+  if (!first) { document.getElementById('err-signup-first').classList.add('show'); document.getElementById('signup-first').classList.add('error'); valid = false; }
+  else { document.getElementById('err-signup-first').classList.remove('show'); document.getElementById('signup-first').classList.remove('error'); }
+  if (!last) { document.getElementById('err-signup-last').classList.add('show'); document.getElementById('signup-last').classList.add('error'); valid = false; }
+  else { document.getElementById('err-signup-last').classList.remove('show'); document.getElementById('signup-last').classList.remove('error'); }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('err-signup-email').classList.add('show'); document.getElementById('signup-email').classList.add('error'); valid = false; }
+  else { document.getElementById('err-signup-email').classList.remove('show'); document.getElementById('signup-email').classList.remove('error'); }
+  if (pw.length < 6) { document.getElementById('err-signup-password').classList.add('show'); document.getElementById('signup-password').classList.add('error'); valid = false; }
+  else { document.getElementById('err-signup-password').classList.remove('show'); document.getElementById('signup-password').classList.remove('error'); }
+  if (pw !== conf) { document.getElementById('err-signup-confirm').classList.add('show'); document.getElementById('signup-confirm').classList.add('error'); valid = false; }
+  else { document.getElementById('err-signup-confirm').classList.remove('show'); document.getElementById('signup-confirm').classList.remove('error'); }
+
+  if (!valid) return;
+
+  const db = loadDB();
+  if (db.customers.find(c => c.email === email)) {
+    showToast('⚠ An account with this email already exists');
+    return;
+  }
+
+  const newCustomer = {
+    id: generateId(),
+    firstName: first,
+    lastName: last,
+    email,
+    phone,
+    nationality: nat,
+    passwordHash: hashPassword(pw),
+    joinedAt: new Date().toISOString(),
+    trips: [],
+    preferences: { interests: [], budget: 'Moderate' },
+    totalSpent: 0,
+    totalTrips: 0,
+  };
+
+  db.customers.push(newCustomer);
+  saveDB(db);
+
+  // Auto login
+  localStorage.setItem('smarttour_session', email);
+  currentUser = newCustomer;
+  updateNavUI();
+  showToast('🎉 Welcome to SmartTour, ' + first + '!');
+  showPage('home');
+}
+
+// ============================================================
+//  LOGIN
+// ============================================================
+function loginUser() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pw    = document.getElementById('login-password').value;
+  const remember = document.getElementById('remember-me').checked;
+
+  let valid = true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('err-login-email').classList.add('show');
+    document.getElementById('login-email').classList.add('error');
+    valid = false;
+  } else {
+    document.getElementById('err-login-email').classList.remove('show');
+    document.getElementById('login-email').classList.remove('error');
+  }
+  if (!pw) {
+    document.getElementById('err-login-password').classList.add('show');
+    document.getElementById('login-password').classList.add('error');
+    valid = false;
+  } else {
+    document.getElementById('err-login-password').classList.remove('show');
+    document.getElementById('login-password').classList.remove('error');
+  }
+  if (!valid) return;
+
+  const db = loadDB();
+  const customer = db.customers.find(c => c.email === email && c.passwordHash === hashPassword(pw));
+
+  if (!customer) {
+    showToast('❌ Invalid email or password');
+    document.getElementById('login-email').classList.add('error');
+    document.getElementById('login-password').classList.add('error');
+    return;
+  }
+
+  if (remember) localStorage.setItem('smarttour_session', email);
+  currentUser = customer;
+  updateNavUI();
+  showToast('✅ Welcome back, ' + customer.firstName + '!');
+  showPage('home');
+}
+
+function demoLogin() {
+  const db = loadDB();
+  let demo = db.customers.find(c => c.email === 'demo@smarttour.app');
+  if (!demo) {
+    // Create demo account with sample trips
+    demo = {
+      id: generateId(),
+      firstName: 'Demo',
+      lastName: 'Traveler',
+      email: 'demo@smarttour.app',
+      phone: '+91 9876543210',
+      nationality: 'Indian',
+      passwordHash: hashPassword('demo123'),
+      joinedAt: new Date(Date.now() - 90 * 86400000).toISOString(),
+      trips: [
+        { id:'t1', destination:'Kerala Backwaters', country:'Kerala', emoji:'🛶', price:'₹18,000', priceNum:18000, status:'completed', bookedAt: new Date(Date.now()-60*86400000).toISOString(), travelDate:'Nov 2024', ref:'STR-2024-1042' },
+        { id:'t2', destination:'Taj Mahal & Agra',  country:'Uttar Pradesh', emoji:'🕌', price:'₹8,500',  priceNum:8500,  status:'completed', bookedAt: new Date(Date.now()-30*86400000).toISOString(), travelDate:'Jan 2025', ref:'STR-2025-2187' },
+        { id:'t3', destination:'Leh-Ladakh',        country:'Ladakh', emoji:'🏔', price:'₹25,000', priceNum:25000, status:'upcoming',  bookedAt: new Date().toISOString(), travelDate:'Jun 2025', ref:'STR-2025-4831' },
+      ],
+      preferences: { interests: ['Culture','Food'], budget: 'Moderate' },
+      totalSpent: 51500,
+      totalTrips: 3,
+    };
+    db.customers.push(demo);
+    saveDB(db);
+  }
+  localStorage.setItem('smarttour_session', 'demo@smarttour.app');
+  currentUser = demo;
+  updateNavUI();
+  showToast('🎮 Logged in as Demo Traveler');
+  showPage('home');
+}
+
+function logoutUser() {
+  localStorage.removeItem('smarttour_session');
+  currentUser = null;
+  updateNavUI();
+  showToast('👋 Signed out successfully');
+  showPage('home');
+}
+
+// ============================================================
+//  SAVE TRIP to customer record
+// ============================================================
+function saveTrip(tripData) {
+  if (!currentUser) return;
+  const db = loadDB();
+  const idx = db.customers.findIndex(c => c.email === currentUser.email);
+  if (idx === -1) return;
+
+  const trip = {
+    id: 't_' + Date.now(),
+    destination: tripData.destination,
+    country: tripData.country,
+    emoji: tripData.emoji,
+    price: tripData.price,
+    priceNum: tripData.priceNum || 0,
+    status: 'upcoming',
+    bookedAt: new Date().toISOString(),
+    travelDate: tripData.travelDate || 'TBD',
+    ref: tripData.ref,
+  };
+
+  db.customers[idx].trips.push(trip);
+  db.customers[idx].totalTrips = db.customers[idx].trips.length;
+  db.customers[idx].totalSpent = db.customers[idx].trips.reduce((s, t) => s + (t.priceNum || 0), 0);
+  saveDB(db);
+
+  // Update in-memory
+  currentUser = db.customers[idx];
+}
+
+// ============================================================
+//  EXPORT customer data as JSON file
+// ============================================================
+function exportCustomerData() {
+  if (!currentUser) { showToast('⚠ Please sign in first'); return; }
+
+  const db = loadDB();
+  const customer = db.customers.find(c => c.email === currentUser.email);
+  if (!customer) return;
+
+  // Build clean export object (omit password hash)
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    exportedBy: 'SmartTour v1.0',
+    customer: {
+      id: customer.id,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      phone: customer.phone,
+      nationality: customer.nationality,
+      joinedAt: customer.joinedAt,
+      preferences: customer.preferences,
+      stats: {
+        totalTrips: customer.totalTrips,
+        totalSpent: customer.totalSpent,
+        totalSpentFormatted: '₹' + customer.totalSpent.toLocaleString('en-IN'),
+      },
+      trips: customer.trips,
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `smarttour_${customer.firstName.toLowerCase()}_${customer.lastName.toLowerCase()}_data.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 Your data exported as JSON!');
+}
+
+function exportAllCustomers() {
+  const db = loadDB();
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    exportedBy: 'SmartTour Admin Export v1.0',
+    totalCustomers: db.customers.length,
+    customers: db.customers.map(c => ({
+      id: c.id,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      email: c.email,
+      phone: c.phone,
+      nationality: c.nationality,
+      joinedAt: c.joinedAt,
+      totalTrips: c.totalTrips,
+      totalSpent: c.totalSpent,
+      trips: c.trips,
+    }))
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `smarttour_all_customers_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 All customer data exported!');
+}
+
+// ============================================================
+//  RENDER PROFILE PAGE
+// ============================================================
+function renderProfile() {
+  const container = document.getElementById('profile-content');
+  if (!currentUser) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:4rem">
+        <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent);margin-bottom:0.5rem">Sign In Required</div>
+        <div style="color:var(--muted);margin-bottom:1.5rem">Please sign in to view your profile and trip history.</div>
+        <button class="btn-primary" onclick="showPage('login')">Sign In Now</button>
+      </div>`;
+    return;
+  }
+
+  const db = loadDB();
+  const customer = db.customers.find(c => c.email === currentUser.email) || currentUser;
+  const initials = getInitials(customer.firstName, customer.lastName);
+  const joinDate = new Date(customer.joinedAt).toLocaleDateString('en-IN', { month:'long', year:'numeric' });
+
+  const tripsHTML = customer.trips.length === 0
+    ? `<div style="text-align:center;padding:2rem;color:var(--muted)">No trips yet. <button class="see-all" onclick="showPage('booking')">Book your first trip →</button></div>`
+    : customer.trips.map(t => `
+        <div class="trip-item">
+          <div class="trip-emoji">${t.emoji}</div>
+          <div class="trip-info">
+            <div class="trip-name">${t.destination}, ${t.country}</div>
+            <div class="trip-meta">📅 ${t.travelDate} · Ref: ${t.ref}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="trip-price">${t.price}</div>
+            <div class="trip-status ${t.status}" style="margin-top:0.3rem">${t.status.charAt(0).toUpperCase()+t.status.slice(1)}</div>
+          </div>
+        </div>`).join('');
+
+  container.innerHTML = `
+    <div>
+      <div class="profile-card">
+        <div class="profile-avatar">${initials}</div>
+        <div class="profile-name">${customer.firstName} ${customer.lastName}</div>
+        <div class="profile-email">📧 ${customer.email}</div>
+        <div class="profile-email" style="margin-top:0.2rem">📱 ${customer.phone || 'Not set'}</div>
+        <div class="profile-since">🌍 ${customer.nationality} · Member since ${joinDate}</div>
+        <div class="profile-stats">
+          <div class="p-stat"><div class="p-stat-val">${customer.totalTrips}</div><div class="p-stat-lbl">Trips</div></div>
+          <div class="p-stat"><div class="p-stat-val">₹${(customer.totalSpent/1000).toFixed(0)}K</div><div class="p-stat-lbl">Spent</div></div>
+        </div>
+        <button class="export-btn" style="width:100%;justify-content:center" onclick="exportCustomerData()">
+          📥 Export My Data (JSON)
+        </button>
+      </div>
+    </div>
+    <div>
+      <div class="trip-history">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+          <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--accent)">✈ Trip History</div>
+          <button class="btn-primary" style="padding:0.5rem 1rem;font-size:0.85rem" onclick="showPage('booking')">+ Book New</button>
+        </div>
+        ${tripsHTML}
+      </div>
+      <div class="trip-history" style="margin-top:1.5rem">
+        <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--accent);margin-bottom:1rem">⚙️ Account Settings</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First Name</label><input class="form-input" value="${customer.firstName}" id="prof-first"></div>
+          <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" value="${customer.lastName}" id="prof-last"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" value="${customer.phone||''}" id="prof-phone"></div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+          <button class="btn-primary" style="padding:0.6rem 1.2rem;font-size:0.88rem" onclick="updateProfile()">Save Changes</button>
+          <button class="export-btn" onclick="exportAllCustomers()">🗂 Export All Customers (Admin)</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function updateProfile() {
+  if (!currentUser) return;
+  const db = loadDB();
+  const idx = db.customers.findIndex(c => c.email === currentUser.email);
+  if (idx === -1) return;
+  db.customers[idx].firstName = document.getElementById('prof-first').value.trim() || db.customers[idx].firstName;
+  db.customers[idx].lastName  = document.getElementById('prof-last').value.trim()  || db.customers[idx].lastName;
+  db.customers[idx].phone     = document.getElementById('prof-phone').value.trim();
+  saveDB(db);
+  currentUser = db.customers[idx];
+  updateNavUI();
+  showToast('✅ Profile updated');
+  renderProfile();
+}
+
+// ============================================================
+//  RENDER HELPERS & DESTINATION MODAL
+// ============================================================
+
+function createCard(d) {
+  return `<div class="card" onclick="showDestinationModal(${d.id})">
+    <div class="card-img">${d.emoji}</div>
+    <div class="card-badge ${d.badgeType}">${d.badge}</div>
+    <div class="card-body">
+      <div class="card-title">${d.name}</div>
+      <div class="card-loc">📍 ${d.state} · ${d.category}</div>
+      <div style="color:var(--muted);font-size:0.82rem;margin-bottom:0.6rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${d.desc}</div>
+      <div class="card-row"><div class="card-rating">⭐ ${d.rating}</div><div class="card-price">${d.price}</div></div>
+      <div class="card-tags">${d.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+  </div>`;
+}
+
+// Function to display the destination details modal
+function showDestinationModal(id) {
+  const d = destinations.find(x => x.id === id);
+  if (!d) return;
+
+  const content = document.getElementById('dest-modal-content');
+  content.innerHTML = `
+    <div style="height: 180px; background: linear-gradient(135deg, var(--bg3), var(--bg2)); display: flex; align-items: center; justify-content: center; font-size: 5rem; position: relative;">
+      ${d.emoji}
+      <div class="card-badge ${d.badgeType}" style="top: 1.2rem; left: 1.2rem; right: auto; padding: 0.4rem 1rem; font-size: 0.85rem;">${d.badge}</div>
+    </div>
+    <div style="padding: 2.5rem;">
+      <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-family:'Playfair Display',serif; font-size:2.2rem; color:var(--accent); margin-bottom: 0.4rem; line-height: 1.1;">${d.name}</h2>
+          <div style="color:var(--muted); font-size: 0.95rem;">📍 ${d.state}, ${d.region} India</div>
+        </div>
+        <div style="text-align: right; flex-shrink: 0; margin-left: 1rem;">
+          <div style="font-size: 1.6rem; color: var(--accent3); font-weight: 700;">${d.price}</div>
+          <div style="color:var(--accent); font-size: 0.9rem; font-weight: 600; margin-top: 0.2rem;">⭐ ${d.rating} / 5.0</div>
+        </div>
+      </div>
+
+      <p style="color: rgba(232,234,246,0.9); line-height: 1.7; margin-bottom: 2rem; font-size: 1rem;">
+        ${d.desc} Experience the best of ${d.category.toLowerCase()} tourism here. Perfect for travelers looking to explore highly-rated destinations in the ${d.region}ern region.
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 2rem;">
+        <div style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--border);">
+          <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem;">✈️ Nearest Airport</div>
+          <div style="font-weight: 600; color: var(--text);">${d.airport}</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--border);">
+          <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem;">🥾 Accessibility</div>
+          <div style="font-weight: 600; color: var(--text);">${d.accessibility}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 2.5rem;">
+        <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">Highlights & Tags</div>
+        <div class="card-tags" style="gap: 0.6rem;">
+          ${d.tags.map(t => `<span class="tag" style="font-size:0.85rem; padding: 0.35rem 1rem;">${t}</span>`).join('')}
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1.05rem;" onclick="bookFromModal(${d.id})">✈️ Book This Destination</button>
+    </div>
+  `;
+
+  document.getElementById('dest-modal').classList.add('active');
+}
+
+// Function to initiate booking straight from the detail modal
+function bookFromModal(id) {
+  closeModal('dest-modal');
+  const d = destinations.find(x => x.id === id);
+  if (d) {
+    showPage('booking');
+    
+    // Simulate selecting the package in the booking step 1
+    selectedPackage = {name: d.name, state: d.state, emoji: d.emoji, price: d.price, priceNum: d.priceNum};
+    showToast(`Selected: ${d.name} for booking!`);
+    
+    // Automatically skip to Step 2 since we already selected it
+    bookingNext(1);
+  }
+}
+
+function renderFeatured() {
+  document.getElementById('featured-cards').innerHTML =
+    destinations.filter(d=>d.rating>=4.8).slice(0,4).map(createCard).join('');
+}
+function renderAllCards() {
+  document.getElementById('all-cards').innerHTML = destinations.map(createCard).join('');
+}
+function renderFilters() {
+  const cats = [...new Set(destinations.map(d=>d.category))];
+  document.getElementById('dest-filters').innerHTML =
+    `<button class="filter-btn active" onclick="filterByCategory('',this)">All</button>` +
+    cats.map(c=>`<button class="filter-btn" onclick="filterByCategory('${c}',this)">${c}</button>`).join('');
+}
+function filterByCategory(cat, btn) {
+  document.querySelectorAll('#dest-filters .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = cat ? destinations.filter(d=>d.category===cat) : destinations;
+  document.getElementById('all-cards').innerHTML = filtered.map(createCard).join('');
+}
+
+function filterDest(q) {
+  const filtered = destinations.filter(d=>
+    d.name.toLowerCase().includes(q.toLowerCase()) ||
+    d.state.toLowerCase().includes(q.toLowerCase()) ||
+    d.tags.some(t=>t.toLowerCase().includes(q.toLowerCase()))
+  );
+  document.getElementById('all-cards').innerHTML = filtered.map(createCard).join('');
+}
+
+function renderReviews() {
+  document.getElementById('reviews-list').innerHTML = reviews.map(r=>`
+    <div class="review-card">
+      <div class="review-header">
+        <div class="avatar">${r.initials}</div>
+        <div><div class="reviewer-name">${r.name}</div><div class="reviewer-loc">📍 ${r.loc} · Visited ${r.dest}</div></div>
+        <div class="stars" style="margin-left:auto">${'⭐'.repeat(r.rating)}</div>
+      </div>
+      <div class="review-text">"${r.text}"</div>
+      <div class="review-date">${r.date}</div>
+    </div>`).join('');
+}
+function renderMetrics() {
+  document.getElementById('metrics-grid').innerHTML = metrics.map(m=>`
+    <div class="metric-card">
+      <div class="metric-icon">${m.icon}</div>
+      <div class="metric-val">${m.val}</div>
+      <div class="metric-lbl">${m.lbl}</div>
+      <div class="metric-delta">${m.delta}</div>
+    </div>`).join('');
+}
+function renderBarChart() {
+  const max = Math.max(...monthlyData.map(d=>d.v));
+  document.getElementById('bar-chart').innerHTML = monthlyData.map(d=>`
+    <div class="bar-col">
+      <div class="bar-val">${(d.v/1000).toFixed(1)}K</div>
+      <div class="bar" style="height:${(d.v/max)*130}px"></div>
+      <div class="bar-lbl">${d.m}</div>
+    </div>`).join('');
+}
+function renderDonut() {
+  document.getElementById('donut-chart').innerHTML = destTypes.map(d=>`
+    <div style="display:flex;align-items:center;gap:0.8rem">
+      <div style="width:${d.pct*3}px;height:12px;border-radius:6px;background:${d.color};min-width:20px;max-width:100%"></div>
+      <div style="font-size:0.82rem;flex:1">${d.type}</div>
+      <div style="font-size:0.82rem;color:${d.color};font-weight:600">${d.pct}%</div>
+    </div>`).join('');
+}
+function renderTopDest() {
+  const sorted = [...destinations].sort((a,b)=>b.rating-a.rating).slice(0,6);
+  document.getElementById('top-destinations-table').innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:0.5rem;color:var(--muted);font-size:0.78rem;font-weight:500">DESTINATION</th>
+        <th style="text-align:left;padding:0.5rem;color:var(--muted);font-size:0.78rem;font-weight:500">CATEGORY</th>
+        <th style="text-align:left;padding:0.5rem;color:var(--muted);font-size:0.78rem;font-weight:500">RATING</th>
+        <th style="text-align:left;padding:0.5rem;color:var(--muted);font-size:0.78rem;font-weight:500">PRICE</th>
+        <th style="text-align:left;padding:0.5rem;color:var(--muted);font-size:0.78rem;font-weight:500">TAGS</th>
+      </tr></thead>
+      <tbody>${sorted.map(d=>`
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+          <td style="padding:0.7rem 0.5rem"><span style="margin-right:0.5rem">${d.emoji}</span><strong>${d.name}</strong>, ${d.state}</td>
+          <td style="padding:0.7rem 0.5rem;color:var(--muted);font-size:0.88rem">${d.category}</td>
+          <td style="padding:0.7rem 0.5rem;color:var(--accent);font-weight:600">⭐ ${d.rating}</td>
+          <td style="padding:0.7rem 0.5rem;color:var(--accent3);font-weight:600">${d.price}</td>
+          <td style="padding:0.7rem 0.5rem">${d.tags.map(t=>`<span class="tag">${t}</span>`).join(' ')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+function renderPlannerDestSelect() {
+  document.getElementById('plan-dest').innerHTML =
+    '<option value="">Choose destination...</option>' +
+    destinations.map(d=>`<option value="${d.id}">${d.emoji} ${d.name}, ${d.state}</option>`).join('');
+}
+function renderBookingPackages() {
+  const pkgs = destinations.slice(0,6);
+  document.getElementById('booking-packages').innerHTML = pkgs.map(d=>`
+    <div class="card" onclick="selectPackage(this,'${d.name}','${d.state}','${d.emoji}','${d.price}',${d.priceNum})" style="cursor:pointer">
+      <div class="card-img">${d.emoji}</div>
+      <div class="card-body">
+        <div class="card-title">${d.name}</div>
+        <div class="card-loc">📍 ${d.state}</div>
+        <div class="card-row" style="margin-top:0.5rem">
+          <span class="card-rating">⭐ ${d.rating}</span>
+          <span class="card-price">${d.price}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+let selectedPackage = null;
+function selectPackage(el, name, state, emoji, price, priceNum) {
+  document.querySelectorAll('#booking-packages .card').forEach(c=>c.style.borderColor='');
+  el.style.borderColor = 'var(--accent)';
+  selectedPackage = {name, state, emoji, price, priceNum};
+  showToast(`Selected: ${name} — ${price}`);
+}
+
+// ============================================================
+//  ITINERARY GENERATOR
+// ============================================================
+const itineraryTemplates = {
+  Culture: ["Visit historic temples and museums", "Explore old town & local markets", "Traditional cooking class experience"],
+  Adventure: ["Sunrise hike to scenic viewpoint", "White-water rafting / zip-lining", "Rock climbing & outdoor exploration"],
+  Food: ["Street food tour with local guide", "Fine dining at award-winning restaurant", "Farm-to-table cooking workshop"],
+  Beach: ["Snorkelling in crystal waters", "Sunset catamaran cruise", "Beachside yoga & spa day"],
+  Nature: ["National park trek & wildlife spotting", "Waterfall hike & nature photography", "Botanical garden & bird watching"],
+  Shopping: ["Designer boutiques & local crafts", "Night market exploration", "Vintage & souvenir hunting"],
+};
+
+function generateItinerary() {
+  const destId = document.getElementById('plan-dest').value;
+  const from = document.getElementById('plan-from').value;
+  const to = document.getElementById('plan-to').value;
+  const travelers = document.getElementById('plan-travelers').value;
+  const budget = document.getElementById('plan-budget').value;
+  if (!destId) { showToast('⚠ Please select a destination'); return; }
+  const dest = destinations.find(d=>d.id==destId);
+  const interests = [...document.querySelectorAll('#page-planner .filter-btn.active')].map(b=>b.textContent.trim().replace(/^./,'').trim());
+  const days = from && to ? Math.max(1,Math.round((new Date(to)-new Date(from))/(86400000))) : 5;
+  let html = `<div style="margin-bottom:1rem;padding:0.75rem;background:rgba(232,184,109,0.08);border-radius:10px;border:1px solid rgba(232,184,109,0.2)">
+    <strong>${dest.emoji} ${dest.name}, ${dest.state}</strong><br>
+    <span style="color:var(--muted);font-size:0.82rem">👥 ${travelers} traveler(s) · 💼 ${budget} · 📅 ${days} days</span>
+  </div>`;
+  const activities = interests.length > 0
+    ? interests.flatMap(i => itineraryTemplates[i] || [])
+    : Object.values(itineraryTemplates).flat();
+  const shuffled = activities.sort(()=>Math.random()-0.5);
+  for (let i=1; i<=Math.min(days,7); i++) {
+    const act = shuffled.slice((i-1)*2, i*2);
+    html += `<div class="itinerary-day">
+      <div class="day-label">Day ${i}</div>
+      <div class="day-title">${getDayTitle(i, dest.name)}</div>
+      <div class="day-items">🌅 Morning: ${act[0]||'Explore local neighbourhood'}<br>🍽 Afternoon: ${act[1]||'Lunch & leisure'}<br>🌙 Evening: ${getEvening(i, dest.name, budget)}</div>
+    </div>`;
+  }
+  html += `<div style="margin-top:1.2rem;padding:0.75rem;background:rgba(129,199,132,0.08);border-radius:10px;border:1px solid rgba(129,199,132,0.2)">
+    <div style="color:var(--accent3);font-weight:600;font-size:0.88rem">💡 AI Recommendations</div>
+    <div style="color:var(--muted);font-size:0.82rem;margin-top:0.3rem">Best time to visit · Local SIM card · Travel insurance advised · Book 2 weeks ahead for peak season</div>
+  </div>`;
+  document.getElementById('itinerary-output').innerHTML = html;
+  showToast('✨ Itinerary generated!');
+}
+function getDayTitle(day, dest) {
+  const titles = [`Arrival & First Impressions in ${dest}`,`Deep Dive into ${dest}'s Culture`,`Adventure & Exploration Day`,`Local Flavours & Hidden Gems`,`Scenic Highlights & Relaxation`,`Off-the-Beaten-Path Discoveries`,`Farewell & Last Memories`];
+  return titles[day-1] || `Day ${day} in ${dest}`;
+}
+function getEvening(day, dest, budget) {
+  const options = {Economy:['Local night market dinner','Street food crawl','Sunset viewpoint visit'],Moderate:['Restaurant with local cuisine','Rooftop bar experience','Evening city walk tour'],Luxury:['Fine dining experience','Exclusive cocktail lounge','Private sunset cruise']};
+  const arr = options[budget] || options.Moderate;
+  return arr[day%arr.length];
+}
+
+// ============================================================
+//  BOOKING
+// ============================================================
+let currentStep = 1;
+function bookingNext(step) {
+  if (step===1 && !selectedPackage) { showToast('⚠ Please select a package first'); return; }
+  
+  // Moving from Step 2 to Step 3: Prepare the Review HTML
+  if (step===2) {
+    document.getElementById('booking-review').innerHTML = `
+      <div style="display:grid;gap:0.5rem">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Package</span><strong>${selectedPackage?.name}, ${selectedPackage?.state}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Price</span><strong style="color:var(--accent3)">${selectedPackage?.price}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Traveler</span><strong>${document.getElementById('b-first').value||'Guest'} ${document.getElementById('b-last').value||''}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Status</span><span class="card-badge green" style="position:static">Pending Confirmation</span></div>
+      </div>`;
+  }
+  
+  // Moving from Step 3 to Step 4: Confirm Payment & Save Trip
+  if (step===3) {
+    const ref = 'STR-' + new Date().getFullYear() + '-' + Math.floor(Math.random()*9000+1000);
+    document.getElementById('booking-ref').textContent = ref;
+    
+    // Save trip to customer data
+    if (selectedPackage) {
+      if (currentUser) {
+        saveTrip({
+          destination: selectedPackage.name,
+          country: selectedPackage.state,
+          emoji: selectedPackage.emoji,
+          price: selectedPackage.price,
+          priceNum: selectedPackage.priceNum,
+          travelDate: 'TBD',
+          ref,
+        });
+        showToast('🎉 Booking confirmed & saved to your profile!');
+      } else {
+        showToast('🎉 Booking confirmed! (Sign in to save trip history)');
+      }
+    }
+  }
+
+  // Switch UI panels
+  document.getElementById(`booking-step${step}`).style.display='none';
+  if(document.getElementById(`booking-step${step+1}`)) {
+    document.getElementById(`booking-step${step+1}`).style.display='block';
+  }
+  
+  // Update UI Progress Bar
+  document.getElementById(`step${step}`).classList.remove('active');
+  document.getElementById(`step${step}`).classList.add('done');
+  if(document.getElementById(`step${step+1}`)) {
+    document.getElementById(`step${step+1}`).classList.add('active');
+  }
+  
+  currentStep = step+1;
+}
+
+function bookingBack(step) {
+  document.getElementById(`booking-step${step}`).style.display='none';
+  document.getElementById(`booking-step${step-1}`).style.display='block';
+  document.getElementById(`step${step}`).classList.remove('active');
+  document.getElementById(`step${step-1}`).classList.remove('done');
+  document.getElementById(`step${step-1}`).classList.add('active');
+  currentStep = step-1;
+}
+
+// ============================================================
+//  AUTH UI HELPERS
+// ============================================================
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='signup')));
+  document.getElementById('form-login').classList.toggle('active', tab==='login');
+  document.getElementById('form-signup').classList.toggle('active', tab==='signup');
+}
+
+function checkStrength(pw) {
+  const fill = document.getElementById('strength-fill');
+  const len = pw.length;
+  let score = 0;
+  if (len >= 6) score++;
+  if (len >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const colors = ['#ef9a9a','#ffb74d','#fff176','#81c784','#4fc3f7'];
+  const widths = [20,40,60,80,100];
+  fill.style.width = widths[score-1]||'0' + '%';
+  fill.style.background = colors[score-1]||'var(--border)';
+  fill.style.width = (widths[score-1]||0) + '%';
+}
+
+function showForgotModal() { document.getElementById('forgot-modal').classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function sendReset() {
+  showToast('📧 Reset link sent (demo mode)');
+  closeModal('forgot-modal');
+}
+
+// ============================================================
+//  NAV
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn:not(.primary)').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    if(b.textContent.toLowerCase().includes(id.slice(0,3))) b.classList.add('active');
+  });
+  if (id === 'profile') renderProfile();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function toggleInterest(btn) { btn.classList.toggle('active'); }
+
+function handleSearch(q) { 
+  if(q.length > 2) {
+    showToast(`Searching for "${q}"...`);
+    showPage('destinations'); // Navigate to destinations page
+    
+    // Update the input field on the destinations page and trigger the filter
+    const destInput = document.querySelector('#page-destinations .search-bar');
+    if (destInput) {
+      destInput.value = q;
+      filterDest(q);
+    }
+  } 
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.style.display='none', 3000);
+}
+
+// ============================================================
+//  ML RECOMMENDATION ENGINE
+//  Algorithms: Content-Based Filtering, k-NN, Naïve Bayes, Ensemble
+// ============================================================
+
+// --- Feature matrix: season suitability scores [Jan..Dec] per destination (0-1) ---
+const destSeasonMatrix = {
+  1:  [0.9,0.9,0.8,0.7,0.5,0.2,0.2,0.2,0.4,0.7,0.9,0.9], // Taj Mahal/Agra — best Oct-Mar
+  2:  [0.9,0.9,0.8,0.6,0.4,0.2,0.1,0.1,0.3,0.7,0.9,0.9], // Jaipur — best Oct-Mar
+  3:  [0.7,0.7,0.8,0.8,0.6,0.3,0.2,0.2,0.5,0.9,0.9,0.8], // Kerala Backwaters — best Sep-Feb
+  4:  [0.6,0.7,0.8,0.9,0.9,0.3,0.1,0.1,0.4,0.8,0.9,0.7], // Goa — best Oct-May
+  5:  [0.9,0.9,0.8,0.6,0.4,0.3,0.2,0.3,0.5,0.8,0.9,0.9], // Varanasi — best Oct-Mar
+  6:  [0.3,0.3,0.5,0.7,0.9,0.9,0.8,0.8,0.7,0.5,0.3,0.2], // Leh-Ladakh — best May-Sep
+  7:  [0.7,0.7,0.8,0.8,0.7,0.3,0.2,0.2,0.3,0.7,0.8,0.8], // Andaman — best Oct-May
+  8:  [0.7,0.7,0.8,0.9,0.8,0.4,0.3,0.3,0.5,0.8,0.9,0.8], // Munnar — best Sep-May
+  9:  [0.9,0.9,0.8,0.7,0.5,0.2,0.1,0.2,0.4,0.8,0.9,0.9], // Rajasthan Desert — best Oct-Mar
+  10: [0.8,0.8,0.7,0.6,0.5,0.4,0.5,0.6,0.7,0.9,0.9,0.8], // Mysuru — best Oct-Feb
+  11: [0.8,0.8,0.8,0.7,0.6,0.3,0.2,0.3,0.5,0.8,0.9,0.8], // Rishikesh — best Sep-Jun
+  12: [0.8,0.8,0.7,0.6,0.5,0.3,0.2,0.3,0.5,0.8,0.9,0.8], // Hampi — best Oct-Mar
+  13: [0.7,0.7,0.8,0.8,0.7,0.5,0.4,0.5,0.6,0.8,0.8,0.7], // Darjeeling — best Mar-May, Sep-Nov
+  14: [0.3,0.3,0.4,0.5,0.3,0.1,0.1,0.1,0.2,0.5,0.9,0.9], // Rann of Kutch — best Nov-Feb (Rann Utsav)
+  15: [0.6,0.6,0.7,0.8,0.7,0.3,0.2,0.3,0.5,0.8,0.9,0.7], // Coorg — best Oct-May
+  16: [0.9,0.9,0.9,0.8,0.6,0.3,0.2,0.3,0.5,0.8,0.9,0.9], // Khajuraho — best Oct-Mar
+  17: [0.7,0.7,0.8,0.9,0.9,0.7,0.5,0.6,0.7,0.8,0.7,0.6], // Shimla — best Apr-Jun (summer), Dec-Jan (snow)
+  18: [0.8,0.8,0.8,0.7,0.5,0.3,0.2,0.2,0.4,0.7,0.8,0.8], // Sundarbans — best Oct-Feb
+  19: [0.9,0.9,0.8,0.7,0.5,0.3,0.2,0.3,0.5,0.8,0.9,0.9], // Amritsar — best Oct-Mar
+  20: [0.7,0.7,0.8,0.9,0.8,0.4,0.3,0.4,0.6,0.8,0.8,0.7], // Ooty — best Apr-Jun, Sep-Nov
+};
+
+// Climate profile per destination: cool/warm/cold/dry
+const destClimate = {
+  1:'dry',2:'dry',3:'warm',4:'warm',5:'dry',6:'cold',7:'warm',8:'cool',
+  9:'dry',10:'warm',11:'cool',12:'warm',13:'cool',14:'dry',15:'cool',
+  16:'dry',17:'cold',18:'warm',19:'dry',20:'cool'
+};
+
+// Season name from month index
+function getSeason(m) {
+  if ([10,11,0,1].includes(m)) return { name:'Winter', emoji:'❄️', color:'#4fc3f7' };
+  if ([2,3,4].includes(m))    return { name:'Spring / Pre-Summer', emoji:'🌸', color:'#f48fb1' };
+  if ([5,6,7].includes(m))    return { name:'Monsoon / Summer', emoji:'🌧️', color:'#81c784' };
+  return                              { name:'Post-Monsoon / Autumn', emoji:'🍂', color:'#ffb74d' };
+}
+
+let activeAlgo = 'cbf';
+function setAlgo(algo, btn) {
+  activeAlgo = algo;
+  document.querySelectorAll('.algo-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ---- 1. CONTENT-BASED FILTERING ----
+// Builds a feature vector per destination and computes cosine similarity with user query vector
+function cbfScore(dest, monthIdx, styleFilter, budgetMax, climateFilter) {
+  // Feature vector: [seasonFit, styleMatch, budgetFit, ratingNorm, climateMatch]
+  const seasonFit   = destSeasonMatrix[dest.id]?.[monthIdx] ?? 0.5;
+  const styleMatch  = (styleFilter === 'all' || dest.category === styleFilter) ? 1 : 0.1;
+  const budgetFit   = dest.priceNum <= budgetMax ? (1 - dest.priceNum / budgetMax) * 0.5 + 0.5 : 0;
+  const ratingNorm  = (dest.rating - 4.5) / 0.5; // normalise 4.5-5.0 → 0-1
+  const climateMatch= (climateFilter === 'any' || destClimate[dest.id] === climateFilter) ? 1 : 0.2;
+
+  const userVec = [1, 1, 1, 0.8, 1];
+  const destVec = [seasonFit, styleMatch, budgetFit, ratingNorm, climateMatch];
+
+  // Cosine similarity
+  const dot = userVec.reduce((s,v,i) => s + v * destVec[i], 0);
+  const magU = Math.sqrt(userVec.reduce((s,v) => s + v*v, 0));
+  const magD = Math.sqrt(destVec.reduce((s,v) => s + v*v, 0));
+  return magD === 0 ? 0 : dot / (magU * magD);
+}
+
+// ---- 2. k-NN (k=5) ----
+// Find 5 nearest destinations to a synthetic "ideal destination" for the given season,
+// then rank remaining destinations by Euclidean distance to that centroid
+function knnScore(dest, monthIdx, styleFilter, budgetMax) {
+  // Build feature vectors for all dests
+  const allFeatures = destinations.map(d => ({
+    id: d.id,
+    vec: [
+      destSeasonMatrix[d.id]?.[monthIdx] ?? 0.5,
+      (styleFilter === 'all' || d.category === styleFilter) ? 1 : 0,
+      d.priceNum <= budgetMax ? 1 - d.priceNum / budgetMax : 0,
+      (d.rating - 4.5) / 0.5,
+    ]
+  }));
+
+  // Ideal vector: max season fit, style match, free budget, max rating
+  const ideal = [1, 1, 1, 1];
+
+  // Euclidean distance helper
+  const euclidean = (a, b) => Math.sqrt(a.reduce((s,v,i) => s + (v-b[i])**2, 0));
+
+  // Get k=5 nearest to ideal
+  const sorted = allFeatures.map(f => ({ id:f.id, dist: euclidean(f.vec, ideal) }))
+                             .sort((a,b) => a.dist - b.dist);
+  const kNeighbours = sorted.slice(0, 5);
+
+  // Score = 1 / (1 + distance to centroid of k-neighbours)
+  const centroid = ideal.map((_, i) =>
+    kNeighbours.reduce((s,n) => {
+      const f = allFeatures.find(x => x.id === n.id);
+      return s + f.vec[i];
+    }, 0) / kNeighbours.length
+  );
+
+  const myVec = allFeatures.find(f => f.id === dest.id)?.vec ?? [0,0,0,0];
+  const dist  = euclidean(myVec, centroid);
+  return 1 / (1 + dist * 2);
+}
+
+// ---- 3. NAÏVE BAYES SEASON CLASSIFIER ----
+// P(dest | season, style) ∝ P(season | dest) × P(style | dest) × P(dest)
+// All probabilities from the training matrix + category priors
+function naiveBayesScore(dest, monthIdx, styleFilter, budgetMax) {
+  // P(season | dest) — likelihood from season matrix
+  const p_season_given_dest = destSeasonMatrix[dest.id]?.[monthIdx] ?? 0.3;
+
+  // P(style | dest) — 0.8 if matches, 0.2 if not (Laplace smoothed)
+  const p_style_given_dest  = (styleFilter === 'all' || dest.category === styleFilter) ? 0.8 : 0.15;
+
+  // P(budget | dest) — sigmoid probability
+  const budgetRatio = dest.priceNum / budgetMax;
+  const p_budget    = budgetMax >= 999990 ? 0.8 : 1 / (1 + Math.exp(5 * (budgetRatio - 0.9)));
+
+  // P(dest) — prior based on rating (higher-rated dests more likely recommended)
+  const prior       = (dest.rating - 4.5) / 0.6;
+
+  // Log-sum to avoid underflow (simulate), then normalise to 0-1
+  const logProb = Math.log(p_season_given_dest + 0.01) +
+                  Math.log(p_style_given_dest + 0.01) +
+                  Math.log(p_budget + 0.01) +
+                  Math.log(prior + 0.01);
+
+  // Map log prob from roughly [-10, 0] → [0, 1]
+  return Math.max(0, (logProb + 12) / 12);
+}
+
+// ---- ENSEMBLE: weighted average of all 3 ----
+function ensembleScore(dest, monthIdx, styleFilter, budgetMax, climateFilter) {
+  const s1 = cbfScore(dest, monthIdx, styleFilter, budgetMax, climateFilter);
+  const s2 = knnScore(dest, monthIdx, styleFilter, budgetMax);
+  const s3 = naiveBayesScore(dest, monthIdx, styleFilter, budgetMax);
+  return 0.4 * s1 + 0.35 * s2 + 0.25 * s3; // weighted ensemble
+}
+
+// ---- MAIN RUNNER ----
+async function runMLEngine() {
+  const monthIdx     = parseInt(document.getElementById('ml-month').value);
+  const styleFilter  = document.getElementById('ml-style').value;
+  const budgetMax    = parseInt(document.getElementById('ml-budget').value);
+  const climateFilter= document.getElementById('ml-climate').value;
+
+  // Show spinner with progressive messages
+  const thinkingEl = document.getElementById('ml-thinking');
+  const thinkingTxt = document.getElementById('ml-thinking-text');
+  const resultsEl  = document.getElementById('ml-results');
+  thinkingEl.style.display = 'block';
+  resultsEl.innerHTML = '';
+
+  const steps = [
+    'Building destination feature vectors…',
+    'Running ' + { cbf:'Content-Based Filtering', knn:'k-NN algorithm (k=5)', nb:'Naïve Bayes classifier', ensemble:'Ensemble of all 3 algorithms' }[activeAlgo] + '…',
+    'Computing similarity scores…',
+    'Ranking by season compatibility…',
+    'Generating explanations…'
+  ];
+  for (let i = 0; i < steps.length; i++) {
+    thinkingTxt.textContent = steps[i];
+    await new Promise(r => setTimeout(r, 320));
+  }
+
+  // Compute scores
+  const scored = destinations
+    .filter(d => d.priceNum <= budgetMax)
+    .map(d => {
+      let score;
+      if      (activeAlgo === 'cbf')      score = cbfScore(d, monthIdx, styleFilter, budgetMax, climateFilter);
+      else if (activeAlgo === 'knn')      score = knnScore(d, monthIdx, styleFilter, budgetMax);
+      else if (activeAlgo === 'nb')       score = naiveBayesScore(d, monthIdx, styleFilter, budgetMax);
+      else                                score = ensembleScore(d, monthIdx, styleFilter, budgetMax, climateFilter);
+
+      const seasonFit  = destSeasonMatrix[d.id]?.[monthIdx] ?? 0.5;
+      const styleMatch = (styleFilter === 'all' || d.category === styleFilter) ? 1 : (score * 0.7);
+      const budgetFit  = Math.max(0, 1 - d.priceNum / budgetMax);
+      return { dest:d, score, seasonFit, styleMatch, budgetFit };
+    })
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 6);
+
+  thinkingEl.style.display = 'none';
+
+  // Season tag
+  const season = getSeason(monthIdx);
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('ml-season-tag').innerHTML = `
+    <div class="season-indicator">
+      ${season.emoji} <strong>${monthNames[monthIdx]}</strong> is <strong>${season.name}</strong> season in India
+      &nbsp;·&nbsp; Showing top ${scored.length} picks via <strong>${{cbf:'CBF',knn:'k-NN',nb:'Naïve Bayes',ensemble:'Ensemble'}[activeAlgo]}</strong>
+    </div>`;
+
+  // Render result cards
+  const algoColors = { cbf:'var(--accent2)', knn:'var(--accent3)', nb:'#ce93d8', ensemble:'var(--accent)' };
+  const fillColor  = algoColors[activeAlgo];
+
+  resultsEl.innerHTML = scored.map((item, idx) => {
+    const { dest:d, score, seasonFit, styleMatch, budgetFit } = item;
+    const conf = score > 0.75 ? 'high' : score > 0.5 ? 'med' : 'low';
+    const confLabel = { high:'High Confidence', med:'Medium Confidence', low:'Exploratory Pick' }[conf];
+    const why = buildWhyText(d, monthIdx, styleFilter, seasonFit, activeAlgo);
+
+    return `
+      <div class="rec-card" onclick="showDestinationModal(${d.id})">
+        <div class="rec-rank">#${idx+1}</div>
+        <div class="rec-emoji-box">${d.emoji}</div>
+        <div class="rec-body">
+          <div class="rec-name">${d.name}
+            <span class="confidence-badge conf-${conf}">${confLabel}</span>
+          </div>
+          <div class="rec-state">📍 ${d.state} · ${d.category} · ${d.price}</div>
+
+          <div class="score-bar-wrap">
+            <div class="score-label"><span>Overall Match</span><span>${(score*100).toFixed(0)}%</span></div>
+            <div class="score-track"><div class="score-fill" style="width:${score*100}%;background:${fillColor}"></div></div>
+          </div>
+          <div class="score-bar-wrap">
+            <div class="score-label"><span>Season Fit</span><span>${(seasonFit*100).toFixed(0)}%</span></div>
+            <div class="score-track"><div class="score-fill" style="width:${seasonFit*100}%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-bar-wrap">
+            <div class="score-label"><span>Budget Fit</span><span>${budgetFit>=0.99?'Flexible':(budgetFit*100).toFixed(0)+'%'}</span></div>
+            <div class="score-track"><div class="score-fill" style="width:${Math.min(budgetFit,1)*100}%;background:var(--accent3)"></div></div>
+          </div>
+
+          <div class="rec-why">${why}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function buildWhyText(d, monthIdx, styleFilter, seasonFit, algo) {
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const m = monthNames[monthIdx];
+  const season = getSeason(monthIdx);
+  const fitWord = seasonFit > 0.8 ? 'excellent' : seasonFit > 0.6 ? 'good' : 'moderate';
+  const algoNote = {
+    cbf: `<span>CBF cosine similarity</span> matched your feature vector with this destination.`,
+    knn: `<span>k-NN</span> placed this among the 5 closest destinations to your ideal profile.`,
+    nb:  `<span>Naïve Bayes</span> assigned a high posterior probability given your season & style priors.`,
+    ensemble: `All three algorithms (<span>CBF + k-NN + Naïve Bayes</span>) agree this is a strong pick.`,
+  }[algo];
+  return `${season.emoji} <span>${fitWord.charAt(0).toUpperCase()+fitWord.slice(1)}</span> season fit for ${m}. ${algoNote}`;
+}
+
+// Auto-run on page load with current month
+window.addEventListener('DOMContentLoaded', () => {
+  const currentMonth = new Date().getMonth();
+  document.getElementById('ml-month').value = currentMonth;
+  runMLEngine();
+});
+
+renderFeatured();
+renderAllCards();
+renderFilters();
+renderReviews();
+renderMetrics();
+renderBarChart();
+renderDonut();
+renderTopDest();
+renderPlannerDestSelect();
+renderBookingPackages();
+initSession();
+
+const today = new Date();
+document.getElementById('plan-from').value = today.toISOString().split('T')[0];
+const next = new Date(today); next.setDate(next.getDate()+7);
+document.getElementById('plan-to').value = next.toISOString().split('T')[0];
+
+// Pre-fill booking form if logged in
+if (currentUser) {
+  setTimeout(() => {
+    const bf = document.getElementById('b-first');
+    const bl = document.getElementById('b-last');
+    const be = document.getElementById('b-email');
+    const bp = document.getElementById('b-phone');
+    if (bf) bf.value = currentUser.firstName || '';
+    if (bl) bl.value = currentUser.lastName || '';
+    if (be) be.value = currentUser.email || '';
+    if (bp) bp.value = currentUser.phone || '';
+  }, 100);
+}
+</script>
+</body>
+</html>
